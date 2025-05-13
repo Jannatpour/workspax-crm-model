@@ -1,0 +1,228 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String          @id @default(cuid())
+  name           String?
+  email          String          @unique
+  emailVerified  DateTime?
+  image          String?
+  password       String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  lastLogin      DateTime?
+  role           UserRole        @default(USER)
+  status         UserStatus      @default(ACTIVE)
+  accounts       Account[]
+  contacts       Contact[]
+  emails         Email[]
+  groups         Group[]
+  passwordResets PasswordReset[]
+  sessions       Session[]
+  templates      Template[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expires   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Email {
+  id          String          @id @default(cuid())
+  subject     String
+  body        String
+  bodyText    String?
+  fromEmail   String
+  toEmails    String[]
+  ccEmails    String[]
+  bccEmails   String[]
+  sentAt      DateTime?
+  receivedAt  DateTime?
+  status      EmailStatus     @default(DRAFT)
+  folder      EmailFolder     @default(INBOX)
+  isStarred   Boolean         @default(false)
+  isRead      Boolean         @default(false)
+  isImportant Boolean         @default(false)
+  messageId   String?         @unique
+  inReplyTo   String?
+  references  String[]
+  userId      String
+  contactId   String?
+  threadId    String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  attachments Attachment[]
+  contact     Contact?        @relation(fields: [contactId], references: [id])
+  thread      Thread?         @relation(fields: [threadId], references: [id])
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  embeddings  EmailEmbedding?
+}
+
+model EmailEmbedding {
+  id        String   @id @default(cuid())
+  emailId   String   @unique
+  embedding Float[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  email     Email    @relation(fields: [emailId], references: [id], onDelete: Cascade)
+}
+
+model Thread {
+  id        String   @id @default(cuid())
+  subject   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  emails    Email[]
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  filename  String
+  path      String
+  mimeType  String
+  size      Int
+  emailId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  email     Email    @relation(fields: [emailId], references: [id], onDelete: Cascade)
+}
+
+model Contact {
+  id        String         @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String         @unique
+  phone     String?
+  company   String?
+  title     String?
+  industry  String?
+  website   String?
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?
+  country   String?
+  notes     String?
+  source    ContactSource  @default(MANUAL)
+  sourceId  String?
+  userId    String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emails    Email[]
+  groups    GroupContact[]
+}
+
+model Group {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  userId      String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contacts    GroupContact[]
+}
+
+model GroupContact {
+  groupId   String
+  contactId String
+  createdAt DateTime @default(now())
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, contactId])
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  content     String
+  html        String
+  thumbnail   String?
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum EmailStatus {
+  DRAFT
+  SENDING
+  SENT
+  FAILED
+}
+
+enum EmailFolder {
+  INBOX
+  SENT
+  DRAFTS
+  TRASH
+  IMPORTANT
+  SPAM
+}
+
+enum ContactSource {
+  MANUAL
+  APOLLO
+  IMPORT
+  EMAIL
+}
