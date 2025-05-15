@@ -7,6 +7,7 @@ import React, {
   useCallback,
   ReactNode,
   useEffect,
+  useRef,
 } from 'react';
 
 // Define the types for dashboard sections
@@ -92,6 +93,7 @@ export function DashboardProvider({
   // State for section and params - use direct state instead of history-based approach
   const [currentSection, setCurrentSection] = useState<DashboardSection>(initialSection);
   const [sectionParams, setSectionParams] = useState<Record<string, any> | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Track navigation history
   const [history, setHistory] = useState<
@@ -111,21 +113,22 @@ export function DashboardProvider({
   const changeSection = useCallback((section: DashboardSection, params?: Record<string, any>) => {
     console.log(`DashboardContext: Changing section to ${section}`, params);
 
-    // Special handling for template creation
-    if (section === 'templates-create') {
-      setCurrentSection('templates-create');
-      setSectionParams(params || null);
-    } else {
-      // Set the current section and params directly
-      setCurrentSection(section);
-      setSectionParams(params || null);
+    // Clear any previous timeouts to avoid race conditions
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
     }
+
+    // Set the current section and params directly
+    setCurrentSection(section);
+    setSectionParams(params || null);
 
     // Add to history
     setHistory(prev => [...prev, { section, params: params || null }]);
 
     // Force UI refresh
-    setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
+    window.dispatchEvent(new Event('resize'));
+
+    return true; // Indicate success
   }, []);
 
   // Go back in history

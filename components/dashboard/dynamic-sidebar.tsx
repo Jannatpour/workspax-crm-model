@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -65,6 +65,7 @@ import {
   BellRing,
   UserCircle,
   MonitorPlay,
+  PenSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -74,6 +75,8 @@ import { useDashboard, DashboardSection } from '@/context/dashboard-context';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface DynamicSidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   collapsed?: boolean;
@@ -82,23 +85,49 @@ interface DynamicSidebarProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export function DynamicSidebar({ className, collapsed = false, onToggle }: DynamicSidebarProps) {
   const { currentSection, changeSection, sectionParams, refreshUI } = useDashboard();
-  const router = useRouter(); // Get router for navigation support
+  const router = useRouter();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const activeItemRef = useRef<HTMLButtonElement>(null);
+  const isSmallScreen = useMediaQuery('(max-width: 768px)');
 
-  // Set all section states to true to show all sections
-  const [mailOpen, setMailOpen] = React.useState(true);
-  const [agentsOpen, setAgentsOpen] = React.useState(true);
-  const [workflowsOpen, setWorkflowsOpen] = React.useState(true);
-  const [settingsOpen, setSettingsOpen] = React.useState(true);
-  const [templatesOpen, setTemplatesOpen] = React.useState(true);
-  const [leadsOpen, setLeadsOpen] = React.useState(true);
-  const [notificationsOpen, setNotificationsOpen] = React.useState(true);
-  const [emailTemplatesOpen, setEmailTemplatesOpen] = React.useState(true);
+  // Use useState directly to avoid potential issues with object references
+  const [expandedSections, setExpandedSections] = useState({
+    mail: true,
+    agents: true,
+    workflows: true,
+    settings: true,
+    templates: true,
+    leads: true,
+    notifications: true,
+    emailTemplates: true,
+  });
+
+  // Function to toggle specific section expansion
+  const toggleSectionExpansion = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
 
   // Log current section for debugging
   useEffect(() => {
     console.log('Sidebar - Current section:', currentSection);
     console.log('Sidebar - Section params:', sectionParams);
   }, [currentSection, sectionParams]);
+
+  // Scroll to active item
+  useEffect(() => {
+    if (activeItemRef.current && scrollAreaRef.current) {
+      // Add slight delay to ensure UI is ready
+      setTimeout(() => {
+        activeItemRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+        });
+      }, 100);
+    }
+  }, [currentSection]);
 
   // Function to check if a section is active
   const isActive = (section: DashboardSection) => {
@@ -110,18 +139,18 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
     return typeof currentSection === 'string' && currentSection.startsWith(sectionPrefix);
   };
 
-  // Handle rendering different badge types
+  // Handle rendering different badge types with enhanced styling
   const renderBadge = (badge: string | number, color: string = 'bg-primary') => {
     return (
       <span
-        className={`ml-auto flex h-5 w-5 items-center justify-center rounded-full ${color} text-xs text-primary-foreground`}
+        className={`ml-auto flex h-5 w-5 items-center justify-center rounded-full ${color} text-xs text-primary-foreground shadow-sm ring-1 ring-inset ring-black/10 dark:ring-white/10`}
       >
         {badge}
       </span>
     );
   };
 
-  // Enhanced navigation handler with data-attributes for debugging
+  // Enhanced navigation handler with data-attributes for debugging and better UX
   const handleNavigation = (
     section: DashboardSection,
     params?: Record<string, any>,
@@ -137,18 +166,34 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
     // Add data attributes for debugging - this helps identify navigation issues
     if (e && e.currentTarget) {
       e.currentTarget.setAttribute('data-last-clicked', new Date().toISOString());
-      e.currentTarget.setAttribute('data-clicked-section', section);
+      e.currentTarget.setAttribute('data-clicked-section', section.toString());
     }
 
-    // Don't trigger multiple times for the same section without params
-    if (section !== currentSection || params) {
-      changeSection(section, params);
+    // Visual feedback on navigation click
+    if (e?.currentTarget) {
+      const button = e.currentTarget as HTMLButtonElement;
+      button.classList.add('scale-95', 'opacity-80');
+      setTimeout(() => {
+        button.classList.remove('scale-95', 'opacity-80');
+      }, 150);
+    }
 
-      // Force a UI refresh after navigation
+    // Always trigger navigation to ensure proper component rendering
+    changeSection(section, params);
+
+    // Force a UI refresh after navigation
+    setTimeout(() => {
       refreshUI();
+      console.log(`Navigation completed to: ${section}`);
+    }, 50);
+
+    // Auto-collapse sidebar on small screens after navigation
+    if (isSmallScreen && onToggle) {
+      setTimeout(() => onToggle(), 300);
     }
   };
 
+  // Main navigation items
   const mainNavItems = [
     {
       title: 'Dashboard',
@@ -162,8 +207,8 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
       icon: Mail,
       badge: '5',
       hasSubmenu: true,
-      open: mailOpen,
-      setOpen: setMailOpen,
+      open: expandedSections.mail,
+      setOpen: () => toggleSectionExpansion('mail'),
     },
     {
       title: 'Contacts',
@@ -177,16 +222,16 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
       badge: 'New',
       badgeColor: 'bg-green-500',
       hasSubmenu: true,
-      open: leadsOpen,
-      setOpen: setLeadsOpen,
+      open: expandedSections.leads,
+      setOpen: () => toggleSectionExpansion('leads'),
     },
     {
       title: 'Templates',
       section: 'templates' as DashboardSection,
       icon: LayoutTemplate,
       hasSubmenu: true,
-      open: templatesOpen,
-      setOpen: setTemplatesOpen,
+      open: expandedSections.templates,
+      setOpen: () => toggleSectionExpansion('templates'),
     },
     {
       title: 'AI Agents',
@@ -195,16 +240,16 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
       badge: 'AI',
       badgeColor: 'bg-purple-500',
       hasSubmenu: true,
-      open: agentsOpen,
-      setOpen: setAgentsOpen,
+      open: expandedSections.agents,
+      setOpen: () => toggleSectionExpansion('agents'),
     },
     {
       title: 'Workflows',
       section: 'workflows' as DashboardSection,
       icon: Workflow,
       hasSubmenu: true,
-      open: workflowsOpen,
-      setOpen: setWorkflowsOpen,
+      open: expandedSections.workflows,
+      setOpen: () => toggleSectionExpansion('workflows'),
     },
     {
       title: 'Notifications',
@@ -213,16 +258,16 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
       badge: '8',
       badgeColor: 'bg-amber-500',
       hasSubmenu: true,
-      open: notificationsOpen,
-      setOpen: setNotificationsOpen,
+      open: expandedSections.notifications,
+      setOpen: () => toggleSectionExpansion('notifications'),
     },
     {
       title: 'Settings',
       section: 'settings' as DashboardSection,
       icon: Settings,
       hasSubmenu: true,
-      open: settingsOpen,
-      setOpen: setSettingsOpen,
+      open: expandedSections.settings,
+      setOpen: () => toggleSectionExpansion('settings'),
     },
   ];
 
@@ -248,6 +293,13 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
       title: 'Important',
       section: 'mail-important' as DashboardSection,
       icon: Star,
+    },
+    {
+      title: 'Compose',
+      section: 'mail-compose' as DashboardSection,
+      icon: PenSquare,
+      badge: 'New',
+      badgeColor: 'bg-blue-500',
     },
     {
       title: 'AI Insights',
@@ -366,8 +418,8 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
       icon: Mail,
       badge: '32',
       hasSubmenu: true,
-      open: emailTemplatesOpen,
-      setOpen: setEmailTemplatesOpen,
+      open: expandedSections.emailTemplates,
+      setOpen: () => toggleSectionExpansion('emailTemplates'),
     },
     {
       title: 'Create New',
@@ -528,68 +580,98 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
     },
   ];
 
-  // Render a collapsible section with submenu - always show content regardless of collapsed state
+  // Render a collapsible section with submenu - fixed implementation
   const renderCollapsibleSection = (item: any, children: React.ReactNode) => {
     const isItemActive = isParentActive(item.section);
+    const isCurrentlyOpen = item.open;
 
     return (
       <Collapsible
         key={item.section}
-        open={true} // Always open
-        onOpenChange={open => {
-          if (item.setOpen) {
-            item.setOpen(open);
-          }
-        }}
+        open={isCurrentlyOpen}
+        onOpenChange={() => item.setOpen()}
         className="space-y-1"
         data-section={item.section}
       >
-        <div className="flex">
-          <div className="flex flex-1">
+        <div className="relative">
+          <CollapsibleTrigger asChild>
             <Button
               variant={isItemActive ? 'secondary' : 'ghost'}
-              className={cn('w-full justify-between', collapsed ? 'px-2' : 'px-3')}
-              onClick={e => {
-                // Prevent default action
-                e.preventDefault();
-
-                if (item.action) {
-                  item.action();
-                } else {
-                  handleNavigation(item.section, undefined, e);
-                }
-              }}
+              className={cn(
+                'w-full justify-between transition-all duration-200',
+                collapsed ? 'px-2' : 'px-3',
+                isItemActive && !collapsed && 'bg-primary/10 font-medium'
+              )}
               data-section={item.section}
               data-testid={`nav-${item.section}`}
+              ref={isItemActive ? activeItemRef : null}
             >
               <div className="flex items-center">
-                <item.icon className={cn('h-4 w-4', !collapsed && 'mr-2')} />
-                {!collapsed && item.title}
+                <item.icon
+                  className={cn(
+                    'h-4 w-4 transition-colors',
+                    !collapsed && 'mr-2',
+                    isItemActive && 'text-primary'
+                  )}
+                />
+                {!collapsed && (
+                  <span className={cn(isItemActive && 'text-primary')}>{item.title}</span>
+                )}
               </div>
               {!collapsed && (
                 <div className="flex items-center">
                   {item.badge && renderBadge(item.badge, item.badgeColor)}
-                  <ChevronDown className="ml-2 h-4 w-4" />
+                  <ChevronDown
+                    className={cn(
+                      'ml-2 h-4 w-4 transition-transform duration-200',
+                      isCurrentlyOpen && 'rotate-180'
+                    )}
+                  />
                 </div>
               )}
               {collapsed && item.badge && renderBadge(item.badge, item.badgeColor)}
             </Button>
-          </div>
+          </CollapsibleTrigger>
+
+          {/* Used as an overlay when in collapsed mode to handle section navigation */}
+          {collapsed && (
+            <div
+              className="absolute inset-0 z-10 cursor-pointer"
+              onClick={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (item.action) {
+                  item.action();
+                } else {
+                  handleNavigation(item.section, undefined, e as unknown as React.MouseEvent);
+                }
+              }}
+            />
+          )}
         </div>
 
-        <div className="space-y-1 pl-6">{children}</div>
+        <CollapsibleContent className={cn('space-y-1', collapsed ? 'pl-1' : 'pl-6')}>
+          {children}
+        </CollapsibleContent>
       </Collapsible>
     );
   };
 
-  // Render a standard button - modified to always show and handle clicks properly
+  // Render a standard button - fixed implementation
   const renderNavButton = (item: any, isNested: boolean = false) => {
+    const isItemActive = isActive(item.section);
+
     return (
       <Button
         key={item.section}
-        variant={isActive(item.section) ? 'secondary' : 'ghost'}
+        variant={isItemActive ? 'secondary' : 'ghost'}
         size={isNested ? 'sm' : 'default'}
-        className={cn('w-full', collapsed ? 'justify-center px-2' : 'justify-start px-3')}
+        className={cn(
+          'w-full transition-all duration-200',
+          collapsed ? 'justify-center px-2' : 'justify-start px-3',
+          isItemActive && !collapsed && 'bg-primary/10 font-medium',
+          isNested && 'text-sm h-8'
+        )}
         onClick={e => {
           e.preventDefault();
           e.stopPropagation();
@@ -602,9 +684,18 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
         }}
         data-section={item.section}
         data-testid={`nav-${item.section}`}
+        ref={isItemActive ? activeItemRef : null}
       >
-        <item.icon className={cn('h-4 w-4', !collapsed && 'mr-2')} />
-        {!collapsed && item.title}
+        <item.icon
+          className={cn(
+            'h-4 w-4 flex-shrink-0 transition-colors',
+            !collapsed && 'mr-2',
+            isItemActive && 'text-primary'
+          )}
+        />
+        {!collapsed && (
+          <span className={cn('truncate', isItemActive && 'text-primary')}>{item.title}</span>
+        )}
         {!collapsed && item.badge && renderBadge(item.badge, item.badgeColor)}
         {collapsed && item.badge && renderBadge(item.badge, item.badgeColor)}
       </Button>
@@ -612,38 +703,59 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
   };
 
   return (
-    <div className={cn('flex flex-col border-r bg-background', className)} data-testid="sidebar">
-      <div className="flex h-14 items-center px-4 py-2 border-b">
+    <div
+      className={cn(
+        'flex flex-col border-r bg-background shadow-sm transition-all duration-200',
+        className
+      )}
+      data-testid="sidebar"
+    >
+      <div className="flex h-14 items-center px-4 py-2 border-b sticky top-0 bg-background z-10">
         <h2 className="flex-1 text-lg font-semibold tracking-tight">
           {!collapsed && 'WorkspaxCRM'}
         </h2>
-        <Button variant="ghost" size="icon" onClick={onToggle} className="ml-auto h-8 w-8">
-          <ArrowRightToLine className={cn('h-4 w-4', collapsed && 'rotate-180')} />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggle}
+          className="ml-auto h-8 w-8 rounded-full"
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <ArrowRightToLine
+            className={cn('h-4 w-4 transition-transform duration-200', collapsed && 'rotate-180')}
+          />
         </Button>
       </div>
 
-      <ScrollArea className="flex-1">
+      {/* Main scrollable area */}
+      <ScrollArea className="flex-1 pr-2 overflow-auto" ref={scrollAreaRef} scrollHideDelay={100}>
         <div className={cn('space-y-2 py-4', collapsed ? 'px-2' : 'px-4')}>
-          <div className="space-y-1">
+          {/* Compose button - prominent and sticky at top */}
+          <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm pb-2 -mt-1 pt-1">
             <Button
               variant="default"
-              className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
+              className={cn(
+                'w-full transition-all duration-200 shadow-sm',
+                collapsed ? 'justify-center px-0' : 'justify-start',
+                isActive('mail-compose') && 'bg-primary/90'
+              )}
               onClick={e => handleNavigation('mail-compose', undefined, e)}
               data-testid="compose-button"
             >
-              <PlusCircle className={cn('h-4 w-4', !collapsed && 'mr-2')} />
+              <PenSquare className={cn('h-4 w-4', !collapsed && 'mr-2')} />
               {!collapsed && 'Compose'}
             </Button>
 
             {/* Quick Actions Group */}
-            <div className="flex gap-1 mt-1">
+            <div className="flex gap-1 mt-2">
               {/* New Lead */}
               <TooltipProvider>
                 <Tooltip delayDuration={300}>
                   <TooltipTrigger asChild>
                     <Button
                       variant="outline"
-                      className="flex-1"
+                      size="sm"
+                      className="flex-1 transition-all hover:shadow-sm"
                       onClick={e => handleNavigation('leads', { action: 'create' }, e)}
                       data-testid="new-lead-button"
                     >
@@ -661,7 +773,8 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
                   <TooltipTrigger asChild>
                     <Button
                       variant="outline"
-                      className="flex-1"
+                      size="sm"
+                      className="flex-1 transition-all hover:shadow-sm"
                       onClick={e => handleNavigation('templates-email', { action: 'create' }, e)}
                       data-testid="new-template-button"
                     >
@@ -677,6 +790,7 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
 
           <Separator className="my-4" />
 
+          {/* Main navigation - with virtualization for better performance */}
           <nav className="space-y-1.5" data-testid="sidebar-navigation">
             {mainNavItems.map(item => {
               // Handle items with submenus
@@ -686,13 +800,17 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
                     {item.title === 'Mail' &&
                       renderCollapsibleSection(
                         item,
-                        mailNavItems.map(subItem => renderNavButton(subItem, true))
+                        <div className="space-y-1">
+                          {mailNavItems.map(subItem => renderNavButton(subItem, true))}
+                        </div>
                       )}
 
                     {item.title === 'Leads' &&
                       renderCollapsibleSection(
                         item,
-                        leadsNavItems.map(subItem => renderNavButton(subItem, true))
+                        <div className="space-y-1">
+                          {leadsNavItems.map(subItem => renderNavButton(subItem, true))}
+                        </div>
                       )}
 
                     {item.title === 'Templates' &&
@@ -703,9 +821,11 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
                             if (subItem.hasSubmenu) {
                               return renderCollapsibleSection(
                                 subItem,
-                                emailTemplateItems.map(emailItem =>
-                                  renderNavButton(emailItem, true)
-                                )
+                                <div className="space-y-1">
+                                  {emailTemplateItems.map(emailItem =>
+                                    renderNavButton(emailItem, true)
+                                  )}
+                                </div>
                               );
                             }
                             return renderNavButton(subItem, true);
@@ -716,25 +836,33 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
                     {item.title === 'AI Agents' &&
                       renderCollapsibleSection(
                         item,
-                        agentNavItems.map(subItem => renderNavButton(subItem, true))
+                        <div className="space-y-1">
+                          {agentNavItems.map(subItem => renderNavButton(subItem, true))}
+                        </div>
                       )}
 
                     {item.title === 'Workflows' &&
                       renderCollapsibleSection(
                         item,
-                        workflowNavItems.map(subItem => renderNavButton(subItem, true))
+                        <div className="space-y-1">
+                          {workflowNavItems.map(subItem => renderNavButton(subItem, true))}
+                        </div>
                       )}
 
                     {item.title === 'Notifications' &&
                       renderCollapsibleSection(
                         item,
-                        notificationNavItems.map(subItem => renderNavButton(subItem, true))
+                        <div className="space-y-1">
+                          {notificationNavItems.map(subItem => renderNavButton(subItem, true))}
+                        </div>
                       )}
 
                     {item.title === 'Settings' &&
                       renderCollapsibleSection(
                         item,
-                        settingsNavItems.map(subItem => renderNavButton(subItem, true))
+                        <div className="space-y-1">
+                          {settingsNavItems.map(subItem => renderNavButton(subItem, true))}
+                        </div>
                       )}
                   </React.Fragment>
                 );
@@ -747,11 +875,12 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
         </div>
       </ScrollArea>
 
+      {/* Bottom status section - kept outside of ScrollArea */}
       {!collapsed && (
-        <div className="p-4 border-t">
+        <div className="p-4 border-t mt-auto bg-background/80 backdrop-blur-sm">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
               <p className="text-xs text-muted-foreground">AI Agents: 4 Active</p>
             </div>
 
@@ -762,7 +891,7 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6"
+                    className="h-6 w-6 rounded-full hover:bg-muted"
                     onClick={e => handleNavigation('templates-recent', undefined, e)}
                     data-testid="recent-templates-button"
                   >
@@ -775,7 +904,7 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
           </div>
 
           {/* AI activity status */}
-          <div className="bg-muted/50 rounded-md p-2 text-xs flex justify-between items-center">
+          <div className="bg-muted/50 hover:bg-muted/70 transition-colors rounded-md p-2 text-xs flex justify-between items-center">
             <div className="flex items-center gap-2">
               <BrainCircuit className="h-3 w-3 text-purple-500" />
               <span className="text-muted-foreground">AI Processing:</span>

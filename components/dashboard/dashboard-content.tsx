@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useEffect } from 'react';
 import { useDashboard } from '@/context/dashboard-context';
 import { DashboardOverview } from '@/components/dashboard/dashboard-overview';
@@ -10,22 +11,14 @@ import { MailDrafts } from '@/components/mail/mail-drafts';
 import { MailTrash } from '@/components/mail/mail-trash';
 import { MailCompose } from '@/components/mail/mail-compose';
 import { MailImportant } from '@/components/mail/mail-important';
-// import { MailInsights } from '@/components/mail/mailinsights';
-// import { MailAttention } from '@/components/mail/mail-attention';
+import { MailInsights } from '@/components/mail/MailInsights';
+import { MailAttention } from '@/components/mail/mail-attention';
 
 // Contact components
 import { ContactsOverview } from '@/components/contacts/contacts-overview';
 import { ContactsImport } from '@/components/contacts/contacts-import';
 
-// Leads components
-// import { LeadsOverview } from '@/components/leads/leads-overview';
-// import { LeadsNew } from '@/components/leads/leads-new';
-// import { LeadsQualified } from '@/components/leads/leads-qualified';
-// import { LeadsContacted } from '@/components/leads/leads-contacted';
-// import { LeadsEmail } from '@/components/leads/leads-email';
-// import { LeadsHot } from '@/components/leads/leads-hot';
-
-// Template components - Using your existing naming convention
+// Template components
 import { TemplatesOverview } from '@/components/templates/TemplatesOverview';
 import { TemplateEditor } from '@/components/templates/TemplateEditor';
 import { TemplateLibrary } from '@/components/templates/TemplateLibrary';
@@ -35,44 +28,36 @@ import { PresetSelector } from '@/components/templates/PresetSelector';
 // Import for templates-email if it exists
 import TemplatesEmail from '@/components/templates/templates-email';
 
-// Template email subsection components
-// import { TemplatesEmailMarketing } from '@/components/templates/templates-email-marketing';
-// import { TemplatesEmailNewsletters } from '@/components/templates/templates-email-newsletters';
-// import { TemplatesEmailOnboarding } from '@/components/templates/templates-email-onboarding';
-// import { TemplatesEmailTransactional } from '@/components/templates/templates-email-transactional';
-// import { TemplatesEmailNotifications } from '@/components/templates/templates-email-notifications';
-
 // Agent components
 import { AgentsOverview } from '@/components/agents/agents-overview';
 import { AgentsTeams } from '@/components/agents/agents-teams';
 import { AgentsTraining } from '@/components/agents/agents-training';
 import { AgentsMy } from '@/components/agents/agents-my';
-// import { AgentsEmail } from '@/components/agents/agents-email';
-
-// Workflow components
-// import { WorkflowsOverview } from '@/components/workflows/workflows-overview';
-// import { WorkflowsMy } from '@/components/workflows/workflows-my';
-// import { WorkflowsAutomations } from '@/components/workflows/workflows-automations';
-// import { WorkflowsTemplates } from '@/components/workflows/workflows-templates';
-// import { WorkflowsCreate } from '@/components/workflows/workflows-create';
-
-// Notification components
-// import { NotificationsOverview } from '@/components/notifications/notifications-overview';
-// import { NotificationsLeads } from '@/components/notifications/notifications-leads';
-// import { NotificationsTasks } from '@/components/notifications/notifications-tasks';
-// import { NotificationsEvents } from '@/components/notifications/notifications-events';
-// import { NotificationsUrgent } from '@/components/notifications/notifications-urgent';
 
 // Settings components
 import { SettingsOverview } from '@/components/settings/settings-overview';
 import { SettingsWorkspace } from '@/components/workspace/workspace-settings';
 import { SettingsEmail } from '@/components/settings/settings-email';
-// import { SettingsAI } from '@/components/settings/settings-ai';
-// import { SettingsProfile } from '@/components/settings/settings-profile';
-// import { SettingsIntegrations } from '@/components/settings/settings-integrations';
-// import { SettingsNotifications } from '@/components/settings/settings-notifications';
 
-export function DashboardContent() {
+// Define types for the section parameters
+interface SectionParams {
+  action?: string;
+  templateId?: string;
+  presetId?: string;
+}
+
+// Define type for preset
+interface Preset {
+  id: string;
+  [key: string]: any;
+}
+
+// Create placeholder component
+const PlaceholderComponent = ({ title }: { title: string }) => (
+  <div className="p-6 bg-muted rounded-lg">{title} (Coming Soon)</div>
+);
+
+export function DashboardContent(): JSX.Element {
   const { currentSection, sectionParams, changeSection } = useDashboard();
 
   // Debug logging
@@ -114,24 +99,24 @@ export function DashboardContent() {
 
       // Leads sections
       case 'leads':
-        if (sectionParams?.action === 'create') {
-          return <LeadsNew isCreate={true} />;
+        if ((sectionParams as SectionParams)?.action === 'create') {
+          return <PlaceholderComponent title="New Lead Form" />;
         }
-        return <LeadsOverview />;
+        return <PlaceholderComponent title="Leads Overview Component" />;
       case 'leads-new':
-        return <LeadsNew />;
+        return <PlaceholderComponent title="New Leads Component" />;
       case 'leads-qualified':
-        return <LeadsQualified />;
+        return <PlaceholderComponent title="Qualified Leads Component" />;
       case 'leads-contacted':
-        return <LeadsContacted />;
+        return <PlaceholderComponent title="Contacted Leads Component" />;
       case 'leads-email':
-        return <LeadsEmail />;
+        return <PlaceholderComponent title="Email Leads Component" />;
       case 'leads-hot':
-        return <LeadsHot />;
+        return <PlaceholderComponent title="Hot Leads Component" />;
 
       // Template sections
       case 'templates':
-        if (sectionParams?.action === 'create') {
+        if ((sectionParams as SectionParams)?.action === 'create') {
           console.log('Redirecting to template editor from templates route with create action');
           setTimeout(() => changeSection('templates-create'), 0);
           return <div>Redirecting to template editor...</div>;
@@ -139,26 +124,26 @@ export function DashboardContent() {
         return <TemplatesOverview />;
 
       case 'templates-email':
-        if (sectionParams?.action === 'create') {
+        if ((sectionParams as SectionParams)?.action === 'create') {
           console.log('Rendering template editor with create action from templates-email');
           return <TemplateEditor currentTemplate={null} />;
-        } else if (sectionParams?.templateId) {
-          console.log('Editing template with ID:', sectionParams.templateId);
-          return <TemplateEditor templateId={sectionParams.templateId} />;
+        } else if ((sectionParams as SectionParams)?.templateId) {
+          console.log('Editing template with ID:', (sectionParams as SectionParams).templateId);
+          return <TemplateEditor templateId={(sectionParams as SectionParams).templateId} />;
         }
         return <TemplatesEmail />;
 
       // Email template subsections
       case 'templates-email-marketing':
-        return <TemplatesEmailMarketing />;
+        return <PlaceholderComponent title="Email Marketing Templates" />;
       case 'templates-email-newsletters':
-        return <TemplatesEmailNewsletters />;
+        return <PlaceholderComponent title="Email Newsletter Templates" />;
       case 'templates-email-onboarding':
-        return <TemplatesEmailOnboarding />;
+        return <PlaceholderComponent title="Email Onboarding Templates" />;
       case 'templates-email-transactional':
-        return <TemplatesEmailTransactional />;
+        return <PlaceholderComponent title="Email Transactional Templates" />;
       case 'templates-email-notifications':
-        return <TemplatesEmailNotifications />;
+        return <PlaceholderComponent title="Email Notification Templates" />;
 
       case 'templates-create':
         console.log('Rendering template editor from templates-create route');
@@ -173,7 +158,7 @@ export function DashboardContent() {
       case 'templates-presets':
         return (
           <PresetSelector
-            onSelectPreset={preset => {
+            onSelectPreset={(preset: Preset) => {
               changeSection('templates-create', { presetId: preset.id });
             }}
             onStartFromScratch={() => {
@@ -195,31 +180,31 @@ export function DashboardContent() {
       case 'agents-training':
         return <AgentsTraining />;
       case 'agents-email':
-        return <AgentsEmail />;
+        return <PlaceholderComponent title="Email Agents Component" />;
 
       // Workflow sections
       case 'workflows':
-        return <WorkflowsOverview />;
+        return <PlaceholderComponent title="Workflows Overview Component" />;
       case 'workflows-my':
-        return <WorkflowsMy />;
+        return <PlaceholderComponent title="My Workflows Component" />;
       case 'workflows-automations':
-        return <WorkflowsAutomations />;
+        return <PlaceholderComponent title="Workflow Automations Component" />;
       case 'workflows-templates':
-        return <WorkflowsTemplates />;
+        return <PlaceholderComponent title="Workflow Templates Component" />;
       case 'workflows-create':
-        return <WorkflowsCreate />;
+        return <PlaceholderComponent title="Create Workflow Component" />;
 
       // Notification sections
       case 'notifications':
-        return <NotificationsOverview />;
+        return <PlaceholderComponent title="Notifications Overview Component" />;
       case 'notifications-leads':
-        return <NotificationsLeads />;
+        return <PlaceholderComponent title="Lead Notifications Component" />;
       case 'notifications-tasks':
-        return <NotificationsTasks />;
+        return <PlaceholderComponent title="Task Notifications Component" />;
       case 'notifications-events':
-        return <NotificationsEvents />;
+        return <PlaceholderComponent title="Event Notifications Component" />;
       case 'notifications-urgent':
-        return <NotificationsUrgent />;
+        return <PlaceholderComponent title="Urgent Notifications Component" />;
 
       // Settings sections
       case 'settings':
@@ -229,13 +214,13 @@ export function DashboardContent() {
       case 'settings-email':
         return <SettingsEmail />;
       case 'settings-ai':
-        return <SettingsAI />;
+        return <PlaceholderComponent title="AI Settings Component" />;
       case 'settings-profile':
-        return <SettingsProfile />;
+        return <PlaceholderComponent title="Profile Settings Component" />;
       case 'settings-integrations':
-        return <SettingsIntegrations />;
+        return <PlaceholderComponent title="Integrations Settings Component" />;
       case 'settings-notifications':
-        return <SettingsNotifications />;
+        return <PlaceholderComponent title="Notification Settings Component" />;
 
       default:
         return (

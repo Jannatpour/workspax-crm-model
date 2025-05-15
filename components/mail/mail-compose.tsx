@@ -586,7 +586,6 @@ Thanks,`;
       ]);
 
       setIsGeneratingContent(false);
-
       toast({
         title: 'Subjects Generated',
         description: 'New subject line suggestions are available',
