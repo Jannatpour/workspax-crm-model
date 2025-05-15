@@ -1,7 +1,8 @@
+// /components/workspace/workspace-selector.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useWorkspace, Workspace } from '@/context/workspace-context';
+import { useWorkspace } from '@/context/workspace-context';
 import { useDashboard } from '@/context/dashboard-context';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -30,21 +31,20 @@ import { useToast } from '@/components/ui/sonner';
 
 export function WorkspaceSelector() {
   const { changeSection } = useDashboard();
-  const { currentWorkspace, workspaces, setCurrentWorkspace, createWorkspace, isLoading } =
-    useWorkspace();
+  const {
+    currentWorkspace,
+    workspaces,
+    setCurrentWorkspace,
+    createWorkspace,
+    isLoading,
+    clearWorkspaceData,
+  } = useWorkspace();
+
   const [open, setOpen] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const { toast } = useToast();
-
-  // Debug logs
-  useEffect(() => {
-    console.log(
-      'WorkspaceSelector mounted, current workspace:',
-      currentWorkspace ? currentWorkspace.name : 'none'
-    );
-  }, [currentWorkspace]);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -66,12 +66,10 @@ export function WorkspaceSelector() {
       setLogoFile(null);
       setShowCreateDialog(false);
 
-      toast({
-        title: 'Workspace created',
+      toast.success('Workspace created', {
         description: 'Your new workspace is ready.',
       });
     } catch (error) {
-      console.error('Error creating workspace:', error);
       toast({
         title: 'Creation failed',
         description: error instanceof Error ? error.message : 'An error occurred',
@@ -80,15 +78,30 @@ export function WorkspaceSelector() {
     }
   };
 
-  const handleSelectWorkspace = (workspace: Workspace) => {
-    console.log('Selecting workspace:', workspace.name);
+  const handleSelectWorkspace = (workspace: typeof currentWorkspace) => {
+    if (!workspace || (currentWorkspace && workspace.id === currentWorkspace.id)) {
+      setOpen(false);
+      return;
+    }
+
+    // Clear all workspace-specific data before switching
+    clearWorkspaceData();
+
+    // Set the new workspace
     setCurrentWorkspace(workspace);
     setOpen(false);
+
+    // Redirect to overview
+    changeSection('overview');
+
+    toast({
+      title: 'Workspace switched',
+      description: `You are now in "${workspace.name}"`,
+    });
   };
 
   // Handle manage workspace navigation
   const handleManageWorkspace = () => {
-    console.log('Manage workspace clicked, navigating to settings-workspace');
     setOpen(false);
     // Add a short delay to ensure the popover closes properly
     setTimeout(() => {

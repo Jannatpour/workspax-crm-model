@@ -1,5 +1,7 @@
-import { db } from '@/lib/db/prisma';
-// import { getCurrentUser } from '@/lib/session';
+'use client';
+
+import { prisma } from '@/lib/db/prisma-client';
+import { getCurrentUser } from '@/lib/auth/client';
 import { AutomationSettings } from '@/context/automation-context';
 
 interface AutomationService {
@@ -40,13 +42,13 @@ export class AutomationServiceImpl implements AutomationService {
     }
 
     // Find existing settings or create default ones
-    let settings = await db.userAutomationSettings.findUnique({
+    let settings = await prisma.userAutomationSettings.findUnique({
       where: { userId: user.id },
     });
 
     if (!settings) {
       // Create default settings if none exist
-      settings = await db.userAutomationSettings.create({
+      settings = await prisma.userAutomationSettings.create({
         data: {
           userId: user.id,
           // Default values will be provided by the schema
@@ -77,7 +79,7 @@ export class AutomationServiceImpl implements AutomationService {
       throw new Error('User not authenticated');
     }
 
-    const updatedSettings = await db.userAutomationSettings.upsert({
+    const updatedSettings = await prisma.userAutomationSettings.upsert({
       where: { userId: user.id },
       update: settings,
       create: {
@@ -103,13 +105,13 @@ export class AutomationServiceImpl implements AutomationService {
    * Get workspace-level automation settings
    */
   async getWorkspaceSettings(workspaceId: string): Promise<any> {
-    const settings = await db.workspaceAutomationSettings.findUnique({
+    const settings = await prisma.workspaceAutomationSettings.findUnique({
       where: { workspaceId },
     });
 
     if (!settings) {
       // Create default workspace settings
-      return db.workspaceAutomationSettings.create({
+      return prisma.workspaceAutomationSettings.create({
         data: {
           workspaceId,
           // Default values from schema
@@ -137,7 +139,7 @@ export class AutomationServiceImpl implements AutomationService {
 
       // Get user's active workspace if not provided
       if (!workspaceId) {
-        const userWithWorkspace = await db.user.findUnique({
+        const userWithWorkspace = await prisma.user.findUnique({
           where: { id: userId },
           include: {
             workspaceMemberships: {
@@ -155,12 +157,12 @@ export class AutomationServiceImpl implements AutomationService {
     }
 
     // Get user settings
-    const userSettings = await db.userAutomationSettings.findUnique({
+    const userSettings = await prisma.userAutomationSettings.findUnique({
       where: { userId },
     });
 
     // Get workspace settings
-    const workspaceSettings = await db.workspaceAutomationSettings.findUnique({
+    const workspaceSettings = await prisma.workspaceAutomationSettings.findUnique({
       where: { workspaceId },
     });
 
@@ -196,7 +198,7 @@ export class AutomationServiceImpl implements AutomationService {
       success,
     } = options;
 
-    return db.automationJobLog.create({
+    return prisma.automationJobLog.create({
       data: {
         jobType,
         status,

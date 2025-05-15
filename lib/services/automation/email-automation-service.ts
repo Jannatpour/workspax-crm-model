@@ -1,4 +1,6 @@
-import { automationService } from '@/lib/services/automation/automation-service.ts';
+'use client';
+
+import { automationService } from '@/lib/services/automation/automation-service';
 import { EmailAIAnalysisResult } from '@/types/email';
 
 class EmailAutomationService {

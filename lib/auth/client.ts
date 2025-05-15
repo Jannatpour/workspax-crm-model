@@ -1,6 +1,42 @@
 'use client';
 
 import { parseCookies } from 'nookies';
+import type { User } from '@/lib/auth';
+
+/**
+ * Client-side function to get the current user
+ * This uses the API endpoint instead of server-side session checks
+ */
+export async function getCurrentUser(): Promise<User | null> {
+  try {
+    // Fetch the current user from the API endpoint
+    const response = await fetch('/api/auth/user', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // Important for cookies
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data.user;
+  } catch (error) {
+    console.error('Error fetching current user:', error);
+    return null;
+  }
+}
+
+/**
+ * Client-side function to check if a user is authenticated
+ */
+export async function isAuthenticated(): Promise<boolean> {
+  const user = await getCurrentUser();
+  return !!user;
+}
 
 /**
  * Client-side function to get the session token

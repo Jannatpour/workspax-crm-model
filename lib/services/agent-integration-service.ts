@@ -3,7 +3,7 @@
 import { AgentService } from './agent-service';
 import { AiService } from './ai-service';
 import { AgentType, CapabilityType } from '@prisma/client';
-import { db } from '@/lib/db/prisma';
+import { prisma as db } from '@/lib/db/prisma';
 
 /**
  * Integration Types for connecting agents with CRM modules

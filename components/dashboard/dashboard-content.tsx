@@ -25,7 +25,7 @@ import { TemplateLibrary } from '@/components/templates/TemplateLibrary';
 import { TemplateCategories } from '@/components/templates/TemplateCategories';
 import { PresetSelector } from '@/components/templates/PresetSelector';
 
-// Import for templates-email if it exists
+// Import for templates-email
 import TemplatesEmail from '@/components/templates/templates-email';
 
 // Agent components
@@ -36,7 +36,7 @@ import { AgentsMy } from '@/components/agents/agents-my';
 
 // Settings components
 import { SettingsOverview } from '@/components/settings/settings-overview';
-import { SettingsWorkspace } from '@/components/workspace/workspace-settings';
+import { WorkspaceSettings } from '@/components/workspace/workspace-settings';
 import { SettingsEmail } from '@/components/settings/settings-email';
 
 // Define types for the section parameters
@@ -210,7 +210,7 @@ export function DashboardContent(): JSX.Element {
       case 'settings':
         return <SettingsOverview />;
       case 'settings-workspace':
-        return <SettingsWorkspace />;
+        return <WorkspaceSettings />;
       case 'settings-email':
         return <SettingsEmail />;
       case 'settings-ai':

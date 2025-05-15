@@ -1,6 +1,6 @@
 // src/lib/services/agent-service.ts
 
-import { db } from '@/lib/db/prisma';
+import { prisma as db } from '@/lib/db/prisma';
 import {
   AgentType,
   AgentStatus,
