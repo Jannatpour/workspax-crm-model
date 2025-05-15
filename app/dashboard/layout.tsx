@@ -2,6 +2,8 @@ import React from 'react';
 import { redirect } from 'next/navigation';
 import { ClientDashboardLayout } from '@/components/dashboard/client-dashboard-layout';
 import { getSession } from '@/lib/auth';
+import { WorkspaceProvider } from '@/context/workspace-context';
+import { WorkspaceCheck } from '@/components/workspace/workspace-check';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -17,5 +19,12 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   }
 
   // If we have a session, render the dashboard with the user data
-  return <ClientDashboardLayout user={session.user}>{children}</ClientDashboardLayout>;
+  // Wrapped in workspace context for workspace-aware features
+  return (
+    <WorkspaceProvider>
+      <WorkspaceCheck>
+        <ClientDashboardLayout user={session.user}>{children}</ClientDashboardLayout>
+      </WorkspaceCheck>
+    </WorkspaceProvider>
+  );
 }

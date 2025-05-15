@@ -1,9 +1,29 @@
-import { redirect } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+'use client';
+
+import { useRouter } from 'next/navigation';
 
 export default function LogoutButton() {
+  const router = useRouter();
+
   const handleLogout = async () => {
-    await signOut({ redirect: true, callbackUrl: '/login' });
+    try {
+      // Call your custom logout API endpoint
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Logout failed');
+      }
+
+      // Redirect to login page after successful logout
+      router.push('/login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
   };
 
   return (

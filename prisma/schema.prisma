@@ -1,3 +1,4 @@
+// schema.prisma
 generator client {
   provider = "prisma-client-js"
   // output   = "./generated/client"
@@ -8,25 +9,73 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ==================== Core Models ====================
+
+model Workspace {
+  id                 String                       @id @default(cuid())
+  name               String
+  slug               String                       @unique
+  description        String?
+  logo               String?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  ownerId            String
+  owner              User                         @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members            WorkspaceMember[]
+  contacts           Contact[]
+  emails             Email[]
+  groups             Group[]
+  templates          Template[]
+  agents             Agent[]
+  agentTeams         AgentTeam[]
+  taskExecutions     ModuleAgentTaskExecution[]
+  automationSettings WorkspaceAutomationSettings? // From paste.txt
+  automationJobs     AutomationJobLog[] // From paste.txt
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  role        String    @default("member")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  userId      String
+  workspaceId String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+}
+
 model User {
-  id             String          @id @default(cuid())
-  name           String?
-  email          String          @unique
-  emailVerified  DateTime?
-  image          String?
-  password       String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  lastLogin      DateTime?
-  role           UserRole        @default(USER)
-  status         UserStatus      @default(ACTIVE)
-  accounts       Account[]
-  contacts       Contact[]
-  emails         Email[]
-  groups         Group[]
-  passwordResets PasswordReset[]
-  sessions       Session[]
-  templates      Template[]
+  id                   String                     @id @default(cuid())
+  name                 String?
+  email                String                     @unique
+  emailVerified        DateTime?
+  image                String?
+  password             String?
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+  lastLogin            DateTime?
+  role                 UserRole                   @default(USER)
+  status               UserStatus                 @default(ACTIVE)
+  accounts             Account[]
+  ownedWorkspaces      Workspace[]                @relation("WorkspaceOwner")
+  workspaceMemberships WorkspaceMember[]
+  contacts             Contact[]
+  emails               Email[]
+  groups               Group[]
+  passwordResets       PasswordReset[]
+  sessions             Session[]
+  templates            Template[]
+  agents               Agent[]
+  agentTeams           AgentTeam[] // Added relation field
+  agentConversations   AgentConversation[]
+  agentTrainingData    AgentTrainingData[]
+  agentFeedback        AgentFeedback[]
+  taskExecutions       ModuleAgentTaskExecution[]
+  aiPreferences        UserAIPreferences?
+  automationSettings   UserAutomationSettings? // From paste.txt
+  automationJobs       AutomationJobLog[] // From paste.txt
 }
 
 model Account {
@@ -73,35 +122,95 @@ model PasswordReset {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Email {
-  id          String          @id @default(cuid())
-  subject     String
-  body        String
-  bodyText    String?
-  fromEmail   String
-  toEmails    String[]
-  ccEmails    String[]
-  bccEmails   String[]
-  sentAt      DateTime?
-  receivedAt  DateTime?
-  status      EmailStatus     @default(DRAFT)
-  folder      EmailFolder     @default(INBOX)
-  isStarred   Boolean         @default(false)
-  isRead      Boolean         @default(false)
-  isImportant Boolean         @default(false)
-  messageId   String?         @unique
-  inReplyTo   String?
-  references  String[]
+// ==================== Contact Management ====================
+
+model Contact {
+  id          String         @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String         @unique
+  phone       String?
+  company     String?
+  title       String?
+  industry    String?
+  website     String?
+  address     String?
+  city        String?
+  state       String?
+  zipCode     String?
+  country     String?
+  notes       String?
+  source      ContactSource  @default(MANUAL)
+  sourceId    String?
+  status      ContactStatus  @default(ACTIVE)
+  type        ContactType    @default(PERSON)
   userId      String
-  contactId   String?
-  threadId    String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  attachments Attachment[]
-  contact     Contact?        @relation(fields: [contactId], references: [id])
-  thread      Thread?         @relation(fields: [threadId], references: [id])
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  embeddings  EmailEmbedding?
+  workspaceId String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  emails      Email[]
+  groups      GroupContact[]
+}
+
+model Group {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  userId      String
+  workspaceId String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contacts    GroupContact[]
+}
+
+model GroupContact {
+  groupId   String
+  contactId String
+  createdAt DateTime @default(now())
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, contactId])
+}
+
+// ==================== Email Management ====================
+
+model Email {
+  id             String             @id @default(cuid())
+  subject        String
+  body           String
+  bodyText       String?
+  fromEmail      String
+  toEmails       String[]
+  ccEmails       String[]
+  bccEmails      String[]
+  sentAt         DateTime?
+  receivedAt     DateTime?
+  status         EmailStatus        @default(DRAFT)
+  folder         EmailFolder        @default(INBOX)
+  isStarred      Boolean            @default(false)
+  isRead         Boolean            @default(false)
+  isImportant    Boolean            @default(false)
+  messageId      String?            @unique
+  inReplyTo      String?
+  references     String[]
+  userId         String
+  workspaceId    String
+  contactId      String?
+  threadId       String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  attachments    Attachment[]
+  contact        Contact?           @relation(fields: [contactId], references: [id])
+  thread         Thread?            @relation(fields: [threadId], references: [id])
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace      Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  embeddings     EmailEmbedding?
+  automationJobs AutomationJobLog[] // From paste.txt
 }
 
 model EmailEmbedding {
@@ -133,65 +242,338 @@ model Attachment {
   email     Email    @relation(fields: [emailId], references: [id], onDelete: Cascade)
 }
 
-model Contact {
-  id        String         @id @default(cuid())
-  firstName String
-  lastName  String
-  email     String         @unique
-  phone     String?
-  company   String?
-  title     String?
-  industry  String?
-  website   String?
-  address   String?
-  city      String?
-  state     String?
-  zipCode   String?
-  country   String?
-  notes     String?
-  source    ContactSource  @default(MANUAL)
-  sourceId  String?
-  userId    String
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  emails    Email[]
-  groups    GroupContact[]
-}
-
-model Group {
-  id          String         @id @default(cuid())
-  name        String
-  description String?
-  userId      String
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  contacts    GroupContact[]
-}
-
-model GroupContact {
-  groupId   String
-  contactId String
-  createdAt DateTime @default(now())
-  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-
-  @@id([groupId, contactId])
-}
-
 model Template {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
   description String?
   content     String
   html        String
   thumbnail   String?
   userId      String
+  workspaceId String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+// ==================== Agent System ====================
+
+model Agent {
+  id                    String                        @id @default(cuid())
+  name                  String
+  description           String?
+  type                  AgentType
+  status                AgentStatus                   @default(DRAFT)
+  avatarUrl             String?
+  prompt                String                        @db.Text
+  modelConfig           Json                          @default("{}")
+  settings              Json                          @default("{}")
+  capabilities          AgentCapability[]
+  rating                Float?
+  usageCount            Int                           @default(0)
+  userId                String
+  workspaceId           String
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
+  user                  User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace             Workspace                     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  teamMemberships       AgentTeamMember[]
+  runs                  AgentRun[]
+  trainingData          AgentTrainingData[]
+  conversations         AgentConversation[]
+  workflows             AgentWorkflow[]
+  feedbacks             AgentFeedback[]
+  moduleAssignments     ModuleAgentAssignment[]
+  taskExecutions        ModuleAgentTaskExecution[]
+  defaultForUsers       UserAIPreferences[]           @relation("defaultAgent")
+  workspaceDefaultAgent WorkspaceAutomationSettings[] // From paste.txt
+}
+
+model AgentTeam {
+  id                String                     @id @default(cuid())
+  name              String
+  description       String?
+  userId            String
+  workspaceId       String
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  user              User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace         Workspace                  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members           AgentTeamMember[]
+  workflows         AgentWorkflow[]
+  moduleAssignments ModuleAgentAssignment[]
+  taskExecutions    ModuleAgentTaskExecution[]
+  defaultForUsers   UserAIPreferences[]        @relation("defaultTeam")
+}
+
+model AgentTeamMember {
+  id        String    @id @default(cuid())
+  role      String    @default("member")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  agentId   String
+  teamId    String
+  agent     Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  team      AgentTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, teamId])
+}
+
+model AgentRun {
+  id             String             @id @default(cuid())
+  status         RunStatus          @default(PENDING)
+  input          Json
+  output         Json?
+  metrics        Json?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  error          String?            @db.Text
+  agentId        String
+  workflowId     String?
+  conversationId String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  agent          Agent              @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  workflow       AgentWorkflow?     @relation(fields: [workflowId], references: [id])
+  conversation   AgentConversation? @relation(fields: [conversationId], references: [id])
+}
+
+model AgentWorkflow {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  steps       Json
+  status      WorkflowStatus @default(DRAFT)
+  agentId     String
+  teamId      String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  agent       Agent          @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  team        AgentTeam?     @relation(fields: [teamId], references: [id])
+  runs        AgentRun[]
+}
+
+model AgentConversation {
+  id        String     @id @default(cuid())
+  title     String?
+  messages  Json       @default("[]")
+  isActive  Boolean    @default(true)
+  agentId   String
+  userId    String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  agent     Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  runs      AgentRun[]
+}
+
+model AgentTrainingData {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  type        TrainingDataType
+  content     String           @db.Text
+  metadata    Json?
+  isProcessed Boolean          @default(false)
+  agentId     String
+  userId      String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  agent       Agent            @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AgentFeedback {
+  id         String   @id @default(cuid())
+  rating     Int      @default(0)
+  comment    String?
+  isReviewed Boolean  @default(false)
+  agentId    String
+  userId     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AgentCapability {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  type        CapabilityType
+  config      Json           @default("{}")
+  agentId     String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  agent       Agent          @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
+// ==================== Module Integration ====================
+
+model ModuleAgentAssignment {
+  id           String     @id @default(cuid())
+  agentId      String?
+  teamId       String?
+  moduleType   String // Type of module: 'email', 'contact', 'template', etc.
+  moduleId     String? // Optional specific module instance ID
+  isActive     Boolean    @default(true)
+  priority     Int        @default(1)
+  capabilities String[] // Required capabilities for this assignment
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  agent        Agent?     @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  team         AgentTeam? @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@index([moduleType, moduleId])
+  @@index([agentId])
+  @@index([teamId])
+}
+
+model ModuleTaskDefinition {
+  id                   String   @id @default(cuid())
+  name                 String
+  description          String?
+  moduleType           String // Type of module: 'email', 'contact', 'template', etc.
+  requiredCapabilities String[] // Required capabilities for this task
+  isSystem             Boolean  @default(false) // Whether this is a system-defined task or custom
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([moduleType])
+}
+
+model ModuleAgentTaskExecution {
+  id            String     @id @default(cuid())
+  taskName      String
+  moduleType    String
+  moduleId      String?
+  agentId       String?
+  teamId        String?
+  input         Json
+  output        Json?
+  error         String?
+  executionTime Float? // In seconds
+  status        String // 'pending', 'running', 'completed', 'failed'
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime   @default(now())
+  userId        String
+  workspaceId   String
+  agent         Agent?     @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  team          AgentTeam? @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace     Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([moduleType, moduleId])
+  @@index([agentId])
+  @@index([teamId])
+  @@index([userId])
+  @@index([workspaceId])
+}
+
+model UserAIPreferences {
+  id                String     @id @default(cuid())
+  userId            String     @unique
+  defaultAgentId    String?
+  defaultTeamId     String?
+  aiEnabled         Boolean    @default(true)
+  modulePreferences Json // Module-specific preferences
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  user              User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultAgent      Agent?     @relation("defaultAgent", fields: [defaultAgentId], references: [id], onDelete: SetNull)
+  defaultTeam       AgentTeam? @relation("defaultTeam", fields: [defaultTeamId], references: [id], onDelete: SetNull)
+}
+
+// ==================== Automation Models (from paste.txt) ====================
+
+// User-level automation settings
+model UserAutomationSettings {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Email automation settings
+  emailAnalysisEnabled  Boolean @default(true)
+  leadDetectionEnabled  Boolean @default(true)
+  taskExtractionEnabled Boolean @default(true)
+  eventDetectionEnabled Boolean @default(true)
+  responseGenEnabled    Boolean @default(true)
+
+  // Job automation settings
+  scheduledJobsEnabled  Boolean @default(true)
+  dataEnrichmentEnabled Boolean @default(true)
+  reminderJobsEnabled   Boolean @default(true)
+
+  // Notification settings for automations
+  notificationsEnabled Boolean @default(true)
+
+  // Preferences
+  aiAgentId   String?
+  preferences Json     @default("{}")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// Workspace-level automation settings
+model WorkspaceAutomationSettings {
+  id          String    @id @default(cuid())
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // Email automation settings
+  emailAnalysisEnabled  Boolean @default(true)
+  leadDetectionEnabled  Boolean @default(true)
+  taskExtractionEnabled Boolean @default(true)
+  eventDetectionEnabled Boolean @default(true)
+  responseGenEnabled    Boolean @default(true)
+
+  // Job automation settings
+  scheduledJobsEnabled  Boolean @default(true)
+  dataEnrichmentEnabled Boolean @default(true)
+  reminderJobsEnabled   Boolean @default(true)
+
+  // Quota and rate limits
+  emailAnalysisQuota Int @default(1000) // per month
+  emailAnalysisRate  Int @default(50) // per hour
+
+  // Default agent settings
+  defaultAgentId String?
+  agent          Agent?  @relation(fields: [defaultAgentId], references: [id], onDelete: SetNull)
+
+  preferences Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Automation job logs
+model AutomationJobLog {
+  id        String    @id @default(cuid())
+  jobType   String // email-analysis, lead-detection, scheduled-task, etc.
+  status    String // pending, running, completed, failed
+  startTime DateTime?
+  endTime   DateTime?
+  duration  Int? // in milliseconds
+  success   Boolean?
+  error     String?
+  metadata  Json      @default("{}")
+
+  // Related entities
+  userId      String?
+  workspaceId String
+  emailId     String?
+
+  // Relations
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  email     Email?    @relation(fields: [emailId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+}
+
+// ==================== Enumerations ====================
 
 enum UserRole {
   USER
@@ -225,4 +607,71 @@ enum ContactSource {
   APOLLO
   IMPORT
   EMAIL
+}
+
+enum ContactStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum ContactType {
+  PERSON
+  COMPANY
+}
+
+enum AgentType {
+  SUPPORT
+  EMAIL
+  SALES
+  SCHEDULING
+  CONTENT
+  RESEARCH
+  ASSISTANT
+  CODING
+  CUSTOM
+}
+
+enum AgentStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  TRAINING
+  ARCHIVED
+}
+
+enum RunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum TrainingDataType {
+  TEXT
+  CONVERSATION
+  DOCUMENT
+  STRUCTURED_DATA
+  API_RESPONSE
+  DEMO
+}
+
+enum CapabilityType {
+  WEB_SEARCH
+  FILE_ACCESS
+  EMAIL_SENDING
+  CALENDAR_ACCESS
+  DATABASE_ACCESS
+  API_INTEGRATION
+  CODE_EXECUTION
+  DOCUMENT_CREATION
+  ANALYTICS
 }

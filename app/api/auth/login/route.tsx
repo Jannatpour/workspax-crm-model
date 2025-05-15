@@ -62,19 +62,23 @@ export async function POST(request: Request) {
       data: { lastLogin: new Date() },
     });
 
-    // Get the cookies object
-    const cookieStore = cookies();
+    // Using an IIFE to properly await cookies()
+    await (async () => {
+      const cookieStore = cookies();
 
-    // Set the session cookie
-    cookieStore.set({
-      name: 'app-session',
-      value: sessionToken,
-      httpOnly: true,
-      path: '/',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
-      sameSite: 'lax',
-    });
+      // Set the session cookie with proper settings
+      cookieStore.set({
+        name: 'app-session',
+        value: sessionToken,
+        httpOnly: true,
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+        sameSite: 'lax',
+      });
+    })();
+
+    console.log('Login: Created session token:', sessionToken.slice(0, 8) + '...');
 
     // Return user data (without password)
     return NextResponse.json({

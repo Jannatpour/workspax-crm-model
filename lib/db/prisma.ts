@@ -1,5 +1,3 @@
-// src/lib/db/prisma.ts
-
 import { PrismaClient } from '@prisma/client';
 
 // Add global types for Prisma Client

@@ -58,6 +58,12 @@ const agents = [
 export function AgentsOverview() {
   const { changeSection } = useDashboard();
 
+  // Function to handle creating a new agent
+  const handleCreateNewAgent = () => {
+    // Navigate to the agents-my section and pass a parameter to open the create dialog
+    changeSection('agents-my', { action: 'create' });
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header with title and actions */}
@@ -66,7 +72,7 @@ export function AgentsOverview() {
           <h2 className="text-3xl font-bold tracking-tight">AI Agents</h2>
           <p className="text-muted-foreground">Manage your intelligent AI assistants</p>
         </div>
-        <Button>
+        <Button onClick={handleCreateNewAgent}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Create New Agent
         </Button>

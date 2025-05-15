@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+mport { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/db/prisma';
 
@@ -7,19 +7,26 @@ import { prisma } from '@/lib/db/prisma';
  */
 export async function POST() {
   try {
-    // Get the session token from cookies - await cookies() function
-    const cookieStore = await cookies();
-    const sessionToken = cookieStore.get('app-session')?.value;
+    // Using an IIFE to properly await cookies()
+    const sessionToken = await (async () => {
+      const cookieStore = cookies();
+      return cookieStore.get('app-session')?.value;
+    })();
 
     if (sessionToken) {
+      console.log('Logout: Deleting session from database');
+
       // Delete the session from the database
       await prisma.session.deleteMany({
         where: { sessionToken },
       });
     }
 
-    // Clear the session cookie
-    cookies().delete('app-session');
+    // Clear the session cookie - must use an IIFE to properly await cookies()
+    await (async () => {
+      const cookieStore = cookies();
+      cookieStore.delete('app-session');
+    })();
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -4,13 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import {
   Bell,
+  BellDot,
   Search,
   Bot,
   Mail,
   Menu,
   Sun,
   Moon,
-  LifeBuoy,
+  HelpCircle,
   User,
   Settings,
   LogOut,
@@ -18,6 +19,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/theme-toggle';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +27,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
@@ -35,16 +38,14 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/auth-context';
 import { useSidebarStore } from '@/hooks/use-sidebar';
 import { useDashboard } from '@/context/dashboard-context';
+import { User as UserType } from '@/context/auth-context';
 
 interface DashboardHeaderProps {
-  user?: {
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-  };
+  user: UserType;
+  children?: React.ReactNode;
 }
 
-export function DashboardHeader({ user }: DashboardHeaderProps) {
+export function DashboardHeader({ user, children }: DashboardHeaderProps) {
   const pathname = usePathname();
   const { setTheme, theme } = useTheme();
   const { logout } = useAuth();
@@ -104,7 +105,8 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center border-b bg-background px-4 md:px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
+      {/* Mobile Menu */}
       <div className="flex items-center gap-2 lg:hidden">
         <Sheet>
           <SheetTrigger asChild>
@@ -117,29 +119,51 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
             <Sidebar />
           </SheetContent>
         </Sheet>
-
-        <Button
-          variant="ghost"
-          className="flex items-center"
-          onClick={() => changeSection('overview')}
-        >
-          <span className="font-bold">WorkspaxCRM</span>
-        </Button>
       </div>
 
-      <div className="hidden md:flex md:flex-1 md:gap-4">
-        {/* Dynamic section title based on current section */}
-        <h1 className="text-xl font-semibold">{getSectionDisplayName()}</h1>
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-1 items-center gap-4">
+        {/* Brand/Logo */}
+        <Button
+          variant="ghost"
+          className="flex items-center gap-2 font-semibold"
+          onClick={() => changeSection('overview')}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-6 w-6"
+          >
+            <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
+            <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5" />
+            <circle cx="12" cy="12" r="1.5" />
+            <path d="M16.2 16.2c2.3-2.3 2.3-6.1 0-8.5" />
+            <path d="M19.1 19.1C23 15.2 23 8.8 19.1 4.9" />
+          </svg>
+          <span className="hidden sm:inline">WorkspaxCRM</span>
+        </Button>
+
+        {/* Workspace Selector & Section Title */}
+        <div className="flex items-center gap-4">
+          {children}
+          <h1 className="text-xl font-semibold hidden md:block">{getSectionDisplayName()}</h1>
+        </div>
+
+        {/* Search - Hidden on small devices */}
+        <div className="relative flex-1 max-w-sm hidden md:flex">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input type="search" placeholder="Search..." className="pl-8 bg-muted border-none" />
         </div>
       </div>
 
-      <div className="flex items-center gap-2 md:ml-auto md:gap-4">
+      <div className="flex items-center gap-2">
         {/* Quick access buttons */}
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
           className="relative"
           onClick={() => changeSection('mail-inbox')}
@@ -150,33 +174,27 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
           </Badge>
         </Button>
 
-        <Button variant="outline" size="icon" onClick={() => changeSection('contacts')}>
+        <Button variant="ghost" size="icon" onClick={() => changeSection('contacts')}>
           <Users className="h-4 w-4" />
         </Button>
 
-        <Button variant="outline" size="icon" onClick={() => changeSection('agents')}>
+        <Button variant="ghost" size="icon" onClick={() => changeSection('agents')}>
           <Bot className="h-4 w-4" />
         </Button>
 
-        {/* Theme toggle */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
-              {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setTheme('light')}>
-              <Sun className="mr-2 h-4 w-4" />
-              Light
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme('dark')}>
-              <Moon className="mr-2 h-4 w-4" />
-              Dark
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme('system')}>System</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
+        {/* Notification Bell */}
+        <Button variant="ghost" size="icon" className="relative">
+          <BellDot className="h-5 w-5" />
+          <span className="absolute top-1 right-1 flex h-2 w-2 animate-pulse rounded-full bg-primary"></span>
+        </Button>
+
+        {/* Help Button */}
+        <Button variant="ghost" size="icon">
+          <HelpCircle className="h-5 w-5" />
+        </Button>
 
         {/* Desktop sidebar toggle button - only show if mounted to avoid hydration issues */}
         {isMounted && (
@@ -201,21 +219,23 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium">{user?.name}</p>
-                <p className="text-xs text-muted-foreground">{user?.email}</p>
-              </div>
-            </DropdownMenuLabel>
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuItem disabled>{user?.name || user?.email}</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => changeSection('settings')}>
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </DropdownMenuItem>
+            <DropdownMenuGroup>
+              <DropdownMenuItem>
+                <User className="mr-2 h-4 w-4" />
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => changeSection('settings')}>
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
-              Log out
+              <span>Log out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

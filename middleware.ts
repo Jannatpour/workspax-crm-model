@@ -4,45 +4,69 @@ import type { NextRequest } from 'next/server';
 /**
  * Simple middleware that checks for custom session cookie
  */
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
-  // Define protected routes that require authentication
-  const isProtectedPath =
-    path.startsWith('/dashboard') || path.startsWith('/account') || path.startsWith('/api/private');
+  // Skip middleware for API routes and static assets
+  if (
+    path.startsWith('/api/') ||
+    path.startsWith('/_next/') ||
+    path === '/favicon.ico' ||
+    path === '/robots.txt'
+  ) {
+    return NextResponse.next();
+  }
 
-  // Auth-related routes
-  const isAuthPath =
-    path.startsWith('/login') ||
-    path.startsWith('/register') ||
-    path.startsWith('/forgot-password');
-
-  // Get our custom session token from cookies
+  // Get our custom session token from cookies with more stringent validation
   const sessionToken = request.cookies.get('app-session')?.value;
 
-  // Simple check if user has a session cookie
-  const isLoggedIn = !!sessionToken;
+  // Only consider valid session tokens (must be UUID-like)
+  const hasValidSessionCookie =
+    !!sessionToken &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionToken);
 
-  // Protect routes that require authentication
-  if (isProtectedPath && !isLoggedIn) {
-    const loginUrl = new URL('/login', request.url);
-    // Include the original URL as a callback parameter
-    loginUrl.searchParams.set('callbackUrl', request.url);
-    return NextResponse.redirect(loginUrl);
+  console.log(
+    `Middleware: Path=${path}, HasValidCookie=${hasValidSessionCookie}, Token=${
+      sessionToken ? sessionToken.slice(0, 8) + '...' : 'none'
+    }`
+  );
+
+  // Handle login page access
+  if (path === '/login') {
+    // If user has a valid session cookie, redirect to dashboard
+    if (hasValidSessionCookie) {
+      console.log('Middleware: Valid session cookie found, redirecting from login to dashboard');
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    // Otherwise, allow access to login page
+    return NextResponse.next();
   }
 
-  // Redirect authenticated users away from auth pages to dashboard
-  if (isAuthPath && isLoggedIn) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  // Handle dashboard access
+  if (path.startsWith('/dashboard')) {
+    // If user doesn't have a valid session cookie, redirect to login
+    if (!hasValidSessionCookie) {
+      console.log('Middleware: No valid session cookie, redirecting from dashboard to login');
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    // Otherwise, allow access to dashboard
+    return NextResponse.next();
   }
 
-  // Allow the request to proceed normally
+  // For the root path, redirect based on session status
+  if (path === '/') {
+    if (hasValidSessionCookie) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    } else {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+  }
+
+  // For all other paths, allow access
   return NextResponse.next();
 }
 
 // Configure which routes this middleware applies to
 export const config = {
-  matcher: [
-    '/((?!api/auth/login|api/auth/logout|_next/static|_next/image|favicon.ico|robots.txt).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|robots.txt).*)'],
 };
