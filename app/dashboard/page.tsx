@@ -1,4 +1,5 @@
-import { getSession } from '@/lib/auth';
+// app/dashboard/page.tsx
+import { getSession } from '@/lib/auth/server'; // FIXED: import from server module
 import LogoutButton from '@/components/auth/logout-button';
 
 export default async function DashboardPage() {

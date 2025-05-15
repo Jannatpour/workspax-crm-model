@@ -1,5 +1,5 @@
 import { db } from '@/lib/db/prisma';
-import { getCurrentUser } from '@/lib/session';
+// import { getCurrentUser } from '@/lib/session';
 import { AutomationSettings } from '@/context/automation-context';
 
 interface AutomationService {

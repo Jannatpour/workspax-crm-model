@@ -1,30 +1,38 @@
+// app/dashboard/layout.tsx
 import React from 'react';
 import { redirect } from 'next/navigation';
 import { ClientDashboardLayout } from '@/components/dashboard/client-dashboard-layout';
-import { getSession } from '@/lib/auth';
 import { WorkspaceProvider } from '@/context/workspace-context';
 import { WorkspaceCheck } from '@/components/workspace/workspace-check';
+import { getCurrentUser } from '@/lib/auth/server'; // Import from server-only auth module
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
-  // Get session using our custom function
-  const session = await getSession();
+  try {
+    // Fixed: Using getCurrentUser directly
+    const user = await getCurrentUser();
 
-  // If no session, let middleware handle the redirect
-  if (!session) {
+    // If no user is authenticated, redirect to login
+    if (!user) {
+      console.log('Dashboard: No user found, redirecting to login');
+      redirect('/login');
+    }
+
+    console.log('Dashboard: User authenticated:', user.email);
+
+    // If we have a user, render the dashboard with the user data
+    return (
+      <WorkspaceProvider>
+        <WorkspaceCheck>
+          <ClientDashboardLayout user={user}>{children}</ClientDashboardLayout>
+        </WorkspaceCheck>
+      </WorkspaceProvider>
+    );
+  } catch (error) {
+    console.error('Dashboard layout error:', error);
     redirect('/login');
   }
-
-  // If we have a session, render the dashboard with the user data
-  // Wrapped in workspace context for workspace-aware features
-  return (
-    <WorkspaceProvider>
-      <WorkspaceCheck>
-        <ClientDashboardLayout user={session.user}>{children}</ClientDashboardLayout>
-      </WorkspaceCheck>
-    </WorkspaceProvider>
-  );
 }

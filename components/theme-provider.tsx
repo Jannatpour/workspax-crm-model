@@ -19,5 +19,10 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
     return <>{children}</>;
   }
 
-  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
+  // Add the forcedTheme prop to ensure it's treated as a client component
+  return (
+    <NextThemesProvider {...props} forcedTheme={props.forcedTheme}>
+      {children}
+    </NextThemesProvider>
+  );
 }

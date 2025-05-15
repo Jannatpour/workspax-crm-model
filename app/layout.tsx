@@ -1,22 +1,24 @@
-// src/app/layout.tsx
-import type { Metadata } from 'next';
+import React from 'react';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
-import { SessionProvider } from 'next-auth/react';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'WorkspaxCRM',
-  description: 'Email and contact management system',
+  description: 'A modern CRM solution for businesses',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    // We avoid adding the className here - let the ThemeProvider handle it
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>{children}</body>
+      <head />
+      <body className={inter.className}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
