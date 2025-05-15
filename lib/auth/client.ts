@@ -1,5 +1,5 @@
 'use client';
-// lib/auth/client.ts - CLIENT-COMPATIBLE AUTH FUNCTIONS
+
 import { parseCookies } from 'nookies';
 
 /**

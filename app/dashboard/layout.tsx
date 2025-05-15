@@ -1,4 +1,3 @@
-// app/dashboard/layout.tsx
 import React from 'react';
 import { redirect } from 'next/navigation';
 import { ClientDashboardLayout } from '@/components/dashboard/client-dashboard-layout';

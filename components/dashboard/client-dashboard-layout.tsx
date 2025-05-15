@@ -12,6 +12,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 
 // Import your auth-related types and context
 import { AuthProvider } from '@/context/auth-context';
+import { AutomationProvider } from '@/context/automation-context';
 import type { User } from '@/lib/auth';
 
 interface ClientDashboardLayoutProps {
@@ -34,46 +35,48 @@ export function ClientDashboardLayout({ user, children }: ClientDashboardLayoutP
 
   return (
     <AuthProvider initialUser={user}>
-      <DashboardProvider>
-        <div className="h-screen flex flex-col">
-          <DashboardHeader user={user}>
-            <WorkspaceSelector />
-          </DashboardHeader>
+      <AutomationProvider>
+        <DashboardProvider>
+          <div className="h-screen flex flex-col">
+            <DashboardHeader user={user}>
+              <WorkspaceSelector />
+            </DashboardHeader>
 
-          <div className="flex-1 overflow-hidden">
-            {mounted && (
-              <ResizablePanelGroup direction="horizontal" className="h-full items-stretch">
-                <ResizablePanel
-                  defaultSize={20}
-                  minSize={isCollapsed ? 6 : 15}
-                  maxSize={25}
-                  collapsible={true}
-                  onCollapse={() => setIsCollapsed(true)}
-                  onExpand={() => setIsCollapsed(false)}
-                  className={cn(
-                    isCollapsed
-                      ? 'min-w-[70px] transition-all duration-300 ease-in-out'
-                      : 'min-w-[240px]'
-                  )}
-                >
-                  <DynamicSidebar
-                    collapsed={isCollapsed}
-                    onToggle={() => setIsCollapsed(!isCollapsed)}
-                    className="h-full"
-                  />
-                </ResizablePanel>
+            <div className="flex-1 overflow-hidden">
+              {mounted && (
+                <ResizablePanelGroup direction="horizontal" className="h-full items-stretch">
+                  <ResizablePanel
+                    defaultSize={20}
+                    minSize={isCollapsed ? 6 : 15}
+                    maxSize={25}
+                    collapsible={true}
+                    onCollapse={() => setIsCollapsed(true)}
+                    onExpand={() => setIsCollapsed(false)}
+                    className={cn(
+                      isCollapsed
+                        ? 'min-w-[70px] transition-all duration-300 ease-in-out'
+                        : 'min-w-[240px]'
+                    )}
+                  >
+                    <DynamicSidebar
+                      collapsed={isCollapsed}
+                      onToggle={() => setIsCollapsed(!isCollapsed)}
+                      className="h-full"
+                    />
+                  </ResizablePanel>
 
-                <ResizableHandle withHandle />
+                  <ResizableHandle withHandle />
 
-                <ResizablePanel defaultSize={80}>
-                  <main className="h-full overflow-auto">{children}</main>
-                </ResizablePanel>
-              </ResizablePanelGroup>
-            )}
+                  <ResizablePanel defaultSize={80}>
+                    <main className="h-full overflow-auto">{children}</main>
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              )}
+            </div>
           </div>
-        </div>
-        <Toaster position="top-right" richColors />
-      </DashboardProvider>
+          <Toaster position="top-right" richColors />
+        </DashboardProvider>
+      </AutomationProvider>
     </AuthProvider>
   );
 }

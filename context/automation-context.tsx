@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/context/auth-context';
 
 // Define the shape of automation settings
 export type AutomationSettings = {
@@ -47,15 +47,16 @@ const defaultSettings: AutomationSettings = {
 const AutomationContext = createContext<AutomationContextType | undefined>(undefined);
 
 export function AutomationProvider({ children }: { children: React.ReactNode }) {
-  const { data: session } = useSession();
+  // Use our custom auth hook instead of NextAuth's useSession
+  const { user, isAuthenticated } = useAuth();
   const [settings, setSettings] = useState<AutomationSettings>(defaultSettings);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch user's automation settings when session changes
+  // Fetch user's automation settings when auth state changes
   useEffect(() => {
     const fetchSettings = async () => {
-      if (!session?.user?.id) {
+      if (!isAuthenticated || !user?.id) {
         setIsLoading(false);
         return;
       }
@@ -82,11 +83,11 @@ export function AutomationProvider({ children }: { children: React.ReactNode }) 
     };
 
     fetchSettings();
-  }, [session]);
+  }, [isAuthenticated, user]);
 
   // Update settings function
   const updateSettings = async (newSettings: Partial<AutomationSettings>) => {
-    if (!session?.user?.id) return;
+    if (!isAuthenticated || !user?.id) return;
 
     setIsLoading(true);
     setError(null);
