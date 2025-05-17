@@ -1,8 +1,8 @@
 // /components/workspace/invitation/invitation-form.tsx
 'use client';
 
-import { useState } from 'react';
-import { useWorkspace, WorkspaceRole } from '@/context/workspace-context';
+import React, { useState } from 'react';
+import { useWorkspace, WorkspaceRole } from '@/context/workspace-client-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Send, UserPlus } from 'lucide-react';
+import { Loader2, Send, UserPlus, Shield, Users, User } from 'lucide-react';
 import { useToast } from '@/components/ui/sonner';
 
 export function InvitationForm() {
@@ -21,17 +21,22 @@ export function InvitationForm() {
   const [role, setRole] = useState<WorkspaceRole>('member');
   const [isInviting, setIsInviting] = useState(false);
 
-  const { currentWorkspace, inviteToWorkspace } = useWorkspace();
+  const { currentWorkspace, currentUser, inviteToWorkspace } = useWorkspace();
   const { toast } = useToast();
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!currentWorkspace) {
-      toast({
-        title: 'No workspace selected',
+      toast.error('No workspace selected', {
         description: 'Please select a workspace first.',
-        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!currentUser) {
+      toast.error('Authentication required', {
+        description: 'You must be logged in to send invitations.',
       });
       return;
     }
@@ -47,20 +52,30 @@ export function InvitationForm() {
       // Copy to clipboard
       await navigator.clipboard.writeText(inviteLink);
 
-      toast({
-        title: 'Invitation sent',
+      toast.success('Invitation sent', {
         description: 'Invitation link copied to clipboard.',
       });
 
       setEmail('');
     } catch (err) {
-      toast({
-        title: 'Invitation failed',
+      toast.error('Invitation failed', {
         description: err instanceof Error ? err.message : 'Failed to send invitation',
-        variant: 'destructive',
       });
     } finally {
       setIsInviting(false);
+    }
+  };
+
+  const getRoleIcon = (roleValue: string) => {
+    switch (roleValue) {
+      case 'admin':
+        return <Shield className="h-4 w-4 text-purple-500" />;
+      case 'member':
+        return <Users className="h-4 w-4 text-blue-500" />;
+      case 'guest':
+        return <User className="h-4 w-4 text-gray-500" />;
+      default:
+        return null;
     }
   };
 
@@ -76,20 +91,39 @@ export function InvitationForm() {
           placeholder="colleague@example.com"
           required
         />
+        <p className="text-xs text-muted-foreground">
+          The invitation will be sent from {currentUser?.email || 'your account'}
+        </p>
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="invite-role">Role</Label>
         <Select value={role} onValueChange={value => setRole(value as WorkspaceRole)}>
-          <SelectTrigger id="invite-role">
+          <SelectTrigger id="invite-role" className="flex items-center gap-2">
+            {getRoleIcon(role)}
             <SelectValue placeholder="Select a role" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="member">Member</SelectItem>
-            <SelectItem value="guest">Guest</SelectItem>
+            <SelectItem value="admin" className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-purple-500 mr-2" />
+              <span>Admin</span>
+            </SelectItem>
+            <SelectItem value="member" className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-blue-500 mr-2" />
+              <span>Member</span>
+            </SelectItem>
+            <SelectItem value="guest" className="flex items-center gap-2">
+              <User className="h-4 w-4 text-gray-500 mr-2" />
+              <span>Guest</span>
+            </SelectItem>
           </SelectContent>
         </Select>
+        <p className="text-xs text-muted-foreground">
+          {role === 'admin' && 'Admins can manage workspace settings and members.'}
+          {role === 'member' &&
+            'Members can access all workspace content but cannot manage settings.'}
+          {role === 'guest' && 'Guests have limited access to specific items only.'}
+        </p>
       </div>
 
       <Button type="submit" disabled={isInviting} className="w-full">

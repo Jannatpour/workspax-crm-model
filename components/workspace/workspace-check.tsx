@@ -1,7 +1,7 @@
 // /components/workspace/workspace-check.tsx
 'use client';
 
-import { useWorkspace } from '@/context/workspace-context';
+import { useWorkspace } from '@/context/workspace-client-context';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {

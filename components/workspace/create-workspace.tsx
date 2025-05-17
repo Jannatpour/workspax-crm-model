@@ -12,11 +12,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Building, Upload, CheckCircle, Loader2 } from 'lucide-react';
-import { useWorkspace } from '@/context/workspace-context';
+import { useWorkspace } from '@/context/workspace-client-context';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/sonner';
 
 export function CreateWorkspace() {
   const [workspaceName, setWorkspaceName] = useState('');
+  const [description, setDescription] = useState('');
   const [logo, setLogo] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -25,6 +27,7 @@ export function CreateWorkspace() {
 
   const { createWorkspace } = useWorkspace();
   const router = useRouter();
+  const { toast } = useToast();
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -52,11 +55,38 @@ export function CreateWorkspace() {
     setError(null);
 
     try {
-      await createWorkspace({ name: workspaceName, logo: logo || undefined });
+      // Call the createWorkspace method from our context
+      const workspace = await createWorkspace({
+        name: workspaceName,
+        description: description || undefined,
+        logo: logo || undefined,
+      });
+
+      toast({
+        title: 'Workspace created successfully',
+        description: `You can now invite team members to ${workspace.name}`,
+      });
+
       router.push('/dashboard');
     } catch (err) {
       console.error('Error creating workspace:', err);
-      setError('Failed to create workspace. Please try again.');
+      setError(
+        typeof err === 'string'
+          ? err
+          : err instanceof Error
+          ? err.message
+          : 'Failed to create workspace. Please try again.'
+      );
+      toast({
+        title: 'Failed to create workspace',
+        description:
+          typeof err === 'string'
+            ? err
+            : err instanceof Error
+            ? err.message
+            : 'An unexpected error occurred',
+        variant: 'destructive',
+      });
     } finally {
       setIsCreating(false);
     }
@@ -115,6 +145,16 @@ export function CreateWorkspace() {
                   value={workspaceName}
                   onChange={e => setWorkspaceName(e.target.value)}
                   required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="workspace-description">Description</Label>
+                <Input
+                  id="workspace-description"
+                  placeholder="A brief description of your workspace"
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
                 />
               </div>
             </div>

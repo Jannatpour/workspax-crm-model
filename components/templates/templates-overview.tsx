@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useWorkspace } from '@/context/workspace-context';
+import { useWorkspace } from '@/context/workspace-client-context';
 import { useDashboard } from '@/context/dashboard-context';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';

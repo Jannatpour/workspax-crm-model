@@ -106,27 +106,82 @@ export function SettingsOverview() {
         </TabsContent>
 
         <TabsContent value="account">
-          <div className="mt-6 bg-muted/30 rounded-md p-8 text-center">
-            <h3 className="text-xl font-medium mb-2">Account Settings</h3>
-            <p className="text-muted-foreground">
-              This tab will contain account management options.
-            </p>
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Profile Settings</CardTitle>
+                <CardDescription>Manage your personal profile information</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Update your profile details, preferences, and account settings.
+                </p>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" onClick={() => changeSection('settings-profile')}>
+                  Manage Profile <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </CardFooter>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>AI Settings</CardTitle>
+                <CardDescription>Configure AI assistant preferences</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Customize AI behavior, models, and integration settings.
+                </p>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" onClick={() => changeSection('settings-ai')}>
+                  Manage AI Settings <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </CardFooter>
+            </Card>
           </div>
         </TabsContent>
 
         <TabsContent value="integrations">
-          <div className="mt-6 bg-muted/30 rounded-md p-8 text-center">
-            <h3 className="text-xl font-medium mb-2">Integrations</h3>
-            <p className="text-muted-foreground">Connect with other services and apps.</p>
+          <div className="mt-6 grid grid-cols-1 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Service Integrations</CardTitle>
+                <CardDescription>Connect with external services and tools</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Integrate with CRM systems, calendars, social media, and other business tools.
+                </p>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" onClick={() => changeSection('settings-integrations')}>
+                  Manage Integrations <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </CardFooter>
+            </Card>
           </div>
         </TabsContent>
 
         <TabsContent value="notifications">
-          <div className="mt-6 bg-muted/30 rounded-md p-8 text-center">
-            <h3 className="text-xl font-medium mb-2">Notification Settings</h3>
-            <p className="text-muted-foreground">
-              Configure how and when you receive notifications.
-            </p>
+          <div className="mt-6 grid grid-cols-1 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notification Preferences</CardTitle>
+                <CardDescription>Configure how and when you receive notifications</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Customize email, in-app, and mobile notification settings.
+                </p>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" onClick={() => changeSection('settings-notifications')}>
+                  Manage Notifications <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </CardFooter>
+            </Card>
           </div>
         </TabsContent>
       </Tabs>

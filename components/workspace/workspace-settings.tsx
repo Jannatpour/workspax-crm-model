@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useWorkspace } from '@/context/workspace-context';
+import { useWorkspace } from '@/context/workspace-client-context';
 import { useDashboard } from '@/context/dashboard-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,47 +26,33 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/sonner';
 import {
   Loader2,
   Upload,
   X,
-  User,
-  Users,
-  Trash2,
   Building2,
   UserPlus,
   AlertTriangle,
   ArrowLeft,
+  Trash2,
   Link,
 } from 'lucide-react';
 import { PermissionGate } from '@/components/workspace/permissions/permission-gate';
 import { InvitationForm } from '@/components/workspace/invitation/invitation-form';
 import { InvitationList } from '@/components/workspace/invitation/invitation-list';
-
-// Mock current user ID (this would come from your auth system in a real app)
-const CURRENT_USER_ID = '1';
+import { MembersSection } from '@/components/workspace/members/members-section';
 
 export function WorkspaceSettings() {
   const { currentSection, changeSection } = useDashboard();
   const {
     currentWorkspace,
+    currentUser,
     updateWorkspace,
     deleteWorkspace,
-    updateMemberRole,
-    removeMember,
     isLoading,
     error,
-    fetchWorkspaces,
-    getCurrentUserRole,
     hasPermission,
   } = useWorkspace();
 
@@ -79,7 +65,6 @@ export function WorkspaceSettings() {
   const [activeTab, setActiveTab] = useState('general');
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [memberAction, setMemberAction] = useState<{ id: string; action: string } | null>(null);
   const { toast } = useToast();
 
   // Initialize form with current workspace data
@@ -180,62 +165,6 @@ export function WorkspaceSettings() {
     }
   };
 
-  // Update member role
-  const handleUpdateRole = async (memberId: string, newRole: string) => {
-    if (!currentWorkspace) return;
-
-    setMemberAction({ id: memberId, action: 'update' });
-
-    try {
-      await updateMemberRole(currentWorkspace.id, memberId, newRole as any);
-      toast.success('Role updated', {
-        description: 'Member role has been updated successfully.',
-      });
-    } catch (error) {
-      toast.error('Update failed', {
-        description: error instanceof Error ? error.message : 'An error occurred',
-      });
-    } finally {
-      setMemberAction(null);
-    }
-  };
-
-  // Remove member
-  const handleRemoveMember = async (memberId: string) => {
-    if (!currentWorkspace) return;
-
-    setMemberAction({ id: memberId, action: 'remove' });
-
-    try {
-      await removeMember(currentWorkspace.id, memberId);
-      toast.success('Member removed', {
-        description: 'Member has been removed from the workspace.',
-      });
-    } catch (error) {
-      toast.error('Removal failed', {
-        description: error instanceof Error ? error.message : 'An error occurred',
-      });
-    } finally {
-      setMemberAction(null);
-    }
-  };
-
-  // Get member role display name
-  const getRoleDisplay = (role: string) => {
-    switch (role) {
-      case 'owner':
-        return 'Owner';
-      case 'admin':
-        return 'Admin';
-      case 'member':
-        return 'Member';
-      case 'guest':
-        return 'Guest';
-      default:
-        return role;
-    }
-  };
-
   // When no workspace is selected, show a fallback UI
   if (!currentWorkspace) {
     return (
@@ -252,8 +181,6 @@ export function WorkspaceSettings() {
       </div>
     );
   }
-
-  const currentUserRole = getCurrentUserRole();
 
   return (
     <div className="container mx-auto py-6 space-y-8">
@@ -279,7 +206,7 @@ export function WorkspaceSettings() {
             General
           </TabsTrigger>
           <TabsTrigger value="members">
-            <Users className="h-4 w-4 mr-2" />
+            <UserPlus className="h-4 w-4 mr-2" />
             Members
           </TabsTrigger>
           <TabsTrigger value="invitations">
@@ -428,95 +355,7 @@ export function WorkspaceSettings() {
         </TabsContent>
 
         <TabsContent value="members" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Workspace Members</CardTitle>
-              <CardDescription>View members and their roles in your workspace</CardDescription>
-            </CardHeader>
-
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">Current Members</h3>
-                <div className="border rounded-md overflow-hidden">
-                  {currentWorkspace.members && currentWorkspace.members.length > 0 ? (
-                    <div className="divide-y">
-                      {currentWorkspace.members.map(member => (
-                        <div key={member.id} className="flex items-center justify-between p-4">
-                          <div className="flex items-center gap-4">
-                            <Avatar>
-                              {member.avatar ? (
-                                <AvatarImage src={member.avatar} alt={member.name || 'Member'} />
-                              ) : (
-                                <AvatarFallback>
-                                  <User className="h-4 w-4" />
-                                </AvatarFallback>
-                              )}
-                            </Avatar>
-                            <div>
-                              <p className="font-medium">{member.name || member.email}</p>
-                              <p className="text-sm text-muted-foreground">{member.email}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {/* Role display/selector */}
-                            {hasPermission('workspace:members:update') &&
-                            member.id !== currentWorkspace.ownerId ? (
-                              <Select
-                                value={member.role}
-                                onValueChange={value => handleUpdateRole(member.id, value)}
-                                disabled={memberAction?.id === member.id}
-                              >
-                                <SelectTrigger className="w-[110px]">
-                                  {memberAction?.id === member.id &&
-                                  memberAction.action === 'update' ? (
-                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                  ) : null}
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="admin">Admin</SelectItem>
-                                  <SelectItem value="member">Member</SelectItem>
-                                  <SelectItem value="guest">Guest</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            ) : (
-                              <span className="text-sm px-3 py-1 rounded-md bg-muted">
-                                {getRoleDisplay(member.role)}
-                              </span>
-                            )}
-
-                            {/* Remove button */}
-                            {hasPermission('workspace:members:remove') &&
-                              member.id !== currentWorkspace.ownerId &&
-                              member.id !== CURRENT_USER_ID && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleRemoveMember(member.id)}
-                                  disabled={memberAction?.id === member.id}
-                                >
-                                  {memberAction?.id === member.id &&
-                                  memberAction.action === 'remove' ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  )}
-                                </Button>
-                              )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-6 text-center">
-                      <Users className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
-                      <p className="mt-2 text-muted-foreground">No members found</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <MembersSection />
         </TabsContent>
 
         <TabsContent value="invitations" className="mt-6">

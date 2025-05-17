@@ -1,7 +1,6 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
 import { ClientDashboardLayout } from '@/components/dashboard/client-dashboard-layout';
-import { WorkspaceProvider } from '@/context/workspace-context';
 import { WorkspaceCheck } from '@/components/workspace/workspace-check';
 import { getCurrentUser } from '@/lib/auth/server'; // Import from server-only auth module
 
@@ -24,11 +23,9 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
 
     // If we have a user, render the dashboard with the user data
     return (
-      <WorkspaceProvider>
-        <WorkspaceCheck>
-          <ClientDashboardLayout user={user}>{children}</ClientDashboardLayout>
-        </WorkspaceCheck>
-      </WorkspaceProvider>
+      <WorkspaceCheck>
+        <ClientDashboardLayout user={user}>{children}</ClientDashboardLayout>
+      </WorkspaceCheck>
     );
   } catch (error) {
     console.error('Dashboard layout error:', error);

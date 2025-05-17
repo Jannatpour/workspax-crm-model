@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useWorkspace } from '@/context/workspace-context';
+import { useWorkspace } from '@/context/workspace-client-context';
 import { useDashboard } from '@/context/dashboard-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';

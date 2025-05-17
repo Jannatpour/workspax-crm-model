@@ -13,7 +13,14 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 // Import your auth-related types and context
 import { AuthProvider } from '@/context/auth-context';
 import { AutomationProvider } from '@/context/automation-context';
-import type { User } from '@/lib/auth';
+// Define User type directly to avoid importing from server-only modules
+export type User = {
+  id: string;
+  name: string | null;
+  email: string;
+  image: string | null;
+  role: string | null;
+};
 
 interface ClientDashboardLayoutProps {
   children?: React.ReactNode;
@@ -60,7 +67,10 @@ export function ClientDashboardLayout({ user, children }: ClientDashboardLayoutP
                   >
                     <DynamicSidebar
                       collapsed={isCollapsed}
-                      onToggle={() => setIsCollapsed(!isCollapsed)}
+                      onToggle={() => {
+                        console.log('Toggle sidebar, current state:', isCollapsed);
+                        setIsCollapsed(!isCollapsed);
+                      }}
                       className="h-full"
                     />
                   </ResizablePanel>

@@ -2,7 +2,7 @@ import React from 'react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import LoginForm from '@/components/auth/login-form';
-import { isAuthenticated } from '@/lib/auth';
+import { isAuthenticated } from '@/lib/auth/server';
 
 export default async function LoginPage({
   searchParams,

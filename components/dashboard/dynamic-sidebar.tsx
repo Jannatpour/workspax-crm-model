@@ -90,6 +90,9 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
   const activeItemRef = useRef<HTMLButtonElement>(null);
   const isSmallScreen = useMediaQuery('(max-width: 768px)');
 
+  // Debug output for collapsed state
+  console.log('DynamicSidebar rendered with collapsed =', collapsed);
+
   // Use useState directly to avoid potential issues with object references
   const [expandedSections, setExpandedSections] = useState({
     mail: true,
@@ -114,7 +117,8 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
   useEffect(() => {
     console.log('Sidebar - Current section:', currentSection);
     console.log('Sidebar - Section params:', sectionParams);
-  }, [currentSection, sectionParams]);
+    console.log('Sidebar - Collapsed state:', collapsed);
+  }, [currentSection, sectionParams, collapsed]);
 
   // Scroll to active item
   useEffect(() => {
@@ -309,6 +313,20 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
       badgeColor: 'bg-purple-500',
     },
     {
+      title: 'Smart Replies',
+      section: 'mail-smart-replies' as DashboardSection,
+      icon: BrainCircuit,
+      badge: 'AI',
+      badgeColor: 'bg-purple-500',
+    },
+    {
+      title: 'Auto Categorize',
+      section: 'mail-categorize' as DashboardSection,
+      icon: Tags,
+      badge: 'AI',
+      badgeColor: 'bg-purple-500',
+    },
+    {
       title: 'Needs Attention',
       section: 'mail-attention' as DashboardSection,
       icon: AlertCircle,
@@ -361,6 +379,20 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
       badge: '1',
       badgeColor: 'bg-red-500',
     },
+    {
+      title: 'AI Scoring',
+      section: 'leads-scoring' as DashboardSection,
+      icon: BrainCircuit,
+      badge: 'AI',
+      badgeColor: 'bg-purple-500',
+    },
+    {
+      title: 'Auto Enrichment',
+      section: 'leads-enrichment' as DashboardSection,
+      icon: Sparkles,
+      badge: 'AI',
+      badgeColor: 'bg-purple-500',
+    },
   ];
 
   // Notification navigation items
@@ -397,6 +429,20 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
       badge: '2',
       badgeColor: 'bg-red-500',
     },
+    {
+      title: 'Smart Alerts',
+      section: 'notifications-smart' as DashboardSection,
+      icon: BrainCircuit,
+      badge: 'AI',
+      badgeColor: 'bg-purple-500',
+    },
+    {
+      title: 'Priority Inbox',
+      section: 'notifications-priority' as DashboardSection,
+      icon: Sparkles,
+      badge: 'AI',
+      badgeColor: 'bg-purple-500',
+    },
   ];
 
   // Template navigation items with improved organization and submenus
@@ -428,6 +474,20 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
       badge: 'UI',
       badgeColor: 'bg-blue-500',
       action: () => handleNavigation('templates-email', { action: 'create' }),
+    },
+    {
+      title: 'AI Generator',
+      section: 'templates-ai-generator' as DashboardSection,
+      icon: BrainCircuit,
+      badge: 'AI',
+      badgeColor: 'bg-purple-500',
+    },
+    {
+      title: 'Smart Templates',
+      section: 'templates-smart' as DashboardSection,
+      icon: Sparkles,
+      badge: 'AI',
+      badgeColor: 'bg-purple-500',
     },
     {
       title: 'Template Library',
@@ -498,11 +558,39 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
       icon: Users,
     },
     {
-      title: 'Email Processing',
+      title: 'Email Assistant',
       section: 'agents-email' as DashboardSection,
       icon: Mail,
-      badge: 'New',
+      badge: 'Active',
       badgeColor: 'bg-green-500',
+    },
+    {
+      title: 'Contact Enrichment',
+      section: 'agents-contacts' as DashboardSection,
+      icon: UserPlus,
+      badge: 'Active',
+      badgeColor: 'bg-green-500',
+    },
+    {
+      title: 'Lead Qualification',
+      section: 'agents-leads' as DashboardSection,
+      icon: Briefcase,
+      badge: 'Active',
+      badgeColor: 'bg-green-500',
+    },
+    {
+      title: 'Template Generator',
+      section: 'agents-templates' as DashboardSection,
+      icon: LayoutTemplate,
+      badge: 'New',
+      badgeColor: 'bg-blue-500',
+    },
+    {
+      title: 'Notification Manager',
+      section: 'agents-notifications' as DashboardSection,
+      icon: Bell,
+      badge: 'New',
+      badgeColor: 'bg-blue-500',
     },
   ];
 
@@ -564,7 +652,7 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
       badgeColor: 'bg-purple-500',
     },
     {
-      title: 'User Profile',
+      title: 'Profile Settings',
       section: 'settings-profile' as DashboardSection,
       icon: UserCircle,
     },
@@ -706,25 +794,36 @@ export function DynamicSidebar({ className, collapsed = false, onToggle }: Dynam
     <div
       className={cn(
         'flex flex-col border-r bg-background shadow-sm transition-all duration-200',
+        collapsed ? 'sidebar-collapsed' : 'sidebar-expanded',
         className
       )}
       data-testid="sidebar"
+      data-collapsed={collapsed}
     >
       <div className="flex h-14 items-center px-4 py-2 border-b sticky top-0 bg-background z-10">
-        <h2 className="flex-1 text-lg font-semibold tracking-tight">
-          {!collapsed && 'WorkspaxCRM'}
-        </h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggle}
-          className="ml-auto h-8 w-8 rounded-full"
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <ArrowRightToLine
-            className={cn('h-4 w-4 transition-transform duration-200', collapsed && 'rotate-180')}
-          />
-        </Button>
+        <div className="flex items-center justify-between w-full">
+          {/* Logo area */}
+          <div className="flex items-center">
+            {collapsed ? (
+              <Briefcase className="h-5 w-5 text-primary" />
+            ) : (
+              <span className="text-lg font-semibold tracking-tight">WorkSpaxCRM</span>
+            )}
+          </div>
+
+          {/* Toggle button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggle}
+            className="h-8 w-8 rounded-full"
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <ArrowRightToLine
+              className={cn('h-4 w-4 transition-transform duration-200', collapsed && 'rotate-180')}
+            />
+          </Button>
+        </div>
       </div>
 
       {/* Main scrollable area */}

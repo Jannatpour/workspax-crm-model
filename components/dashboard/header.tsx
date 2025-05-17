@@ -212,7 +212,7 @@ export function DashboardHeader({ user, children }: DashboardHeaderProps) {
               </svg>
             </motion.div>
             <span className="hidden sm:inline bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600 dark:from-primary dark:to-blue-400">
-              WorkspaxCRM
+              WorkSpaxCRM
             </span>
           </Button>
         </motion.div>
