@@ -1,6 +1,6 @@
 // src/lib/services/agent-service.ts
 
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db/prisma';
 import {
   AgentType,
   AgentStatus,
@@ -89,7 +89,7 @@ export const AgentService = {
   async createAgent(data: AgentInput) {
     try {
       // Create the agent
-      const agent = await db.agent.create({
+      const agent = await prisma.agent.create({
         data: {
           name: data.name,
           description: data.description,
@@ -110,7 +110,7 @@ export const AgentService = {
         await Promise.all(
           data.capabilities.map(capability => {
             const [type, name] = capability.split('_');
-            return db.agentCapability.create({
+            return prisma.agentCapability.create({
               data: {
                 name: name || capability,
                 type: type.toUpperCase() as CapabilityType,
@@ -134,7 +134,7 @@ export const AgentService = {
    */
   async getAgent(id: string) {
     try {
-      const agent = await db.agent.findUnique({
+      const agent = await prisma.agent.findUnique({
         where: { id },
         include: {
           capabilities: true,
@@ -160,7 +160,7 @@ export const AgentService = {
    */
   async getAgents(workspaceId: string) {
     try {
-      const agents = await db.agent.findMany({
+      const agents = await prisma.agent.findMany({
         where: { workspaceId },
         include: {
           capabilities: true,
@@ -187,7 +187,7 @@ export const AgentService = {
    */
   async getUserAgents(userId: string, workspaceId: string) {
     try {
-      const agents = await db.agent.findMany({
+      const agents = await prisma.agent.findMany({
         where: {
           userId,
           workspaceId,
@@ -218,7 +218,7 @@ export const AgentService = {
   async updateAgent(data: AgentUpdateInput) {
     try {
       // Update agent's main data
-      const agent = await db.agent.update({
+      const agent = await prisma.agent.update({
         where: { id: data.id },
         data: {
           name: data.name,
@@ -235,7 +235,7 @@ export const AgentService = {
       // Update capabilities if provided
       if (data.capabilities) {
         // First delete existing capabilities
-        await db.agentCapability.deleteMany({
+        await prisma.agentCapability.deleteMany({
           where: { agentId: data.id },
         });
 
@@ -243,7 +243,7 @@ export const AgentService = {
         await Promise.all(
           data.capabilities.map(capability => {
             const [type, name] = capability.split('_');
-            return db.agentCapability.create({
+            return prisma.agentCapability.create({
               data: {
                 name: name || capability,
                 type: type.toUpperCase() as CapabilityType,
@@ -268,7 +268,7 @@ export const AgentService = {
   async deleteAgent(id: string) {
     try {
       // Cascade delete will handle related records
-      const agent = await db.agent.delete({
+      const agent = await prisma.agent.delete({
         where: { id },
       });
       return agent;
@@ -284,7 +284,7 @@ export const AgentService = {
   async runAgent(data: AgentRunInput) {
     try {
       // Create a run record
-      const run = await db.agentRun.create({
+      const run = await prisma.agentRun.create({
         data: {
           status: RunStatus.PENDING,
           input: data.input,
@@ -306,7 +306,7 @@ export const AgentService = {
         const success = Math.random() > 0.1; // 90% success rate
 
         if (success) {
-          await db.agentRun.update({
+          await prisma.agentRun.update({
             where: { id: run.id },
             data: {
               status: RunStatus.COMPLETED,
@@ -320,12 +320,12 @@ export const AgentService = {
           });
 
           // Increment usage count on agent
-          await db.agent.update({
+          await prisma.agent.update({
             where: { id: data.agentId },
             data: { usageCount: { increment: 1 } },
           });
         } else {
-          await db.agentRun.update({
+          await prisma.agentRun.update({
             where: { id: run.id },
             data: {
               status: RunStatus.FAILED,
@@ -348,7 +348,7 @@ export const AgentService = {
    */
   async createTeam(data: AgentTeamInput) {
     try {
-      const team = await db.agentTeam.create({
+      const team = await prisma.agentTeam.create({
         data: {
           name: data.name,
           description: data.description,
@@ -368,7 +368,7 @@ export const AgentService = {
    */
   async getTeams(workspaceId: string) {
     try {
-      const teams = await db.agentTeam.findMany({
+      const teams = await prisma.agentTeam.findMany({
         where: { workspaceId },
         include: {
           members: {
@@ -391,7 +391,7 @@ export const AgentService = {
    */
   async addAgentToTeam(data: AgentTeamMemberInput) {
     try {
-      const teamMember = await db.agentTeamMember.create({
+      const teamMember = await prisma.agentTeamMember.create({
         data: {
           role: data.role || 'member',
           agent: { connect: { id: data.agentId } },
@@ -410,7 +410,7 @@ export const AgentService = {
    */
   async removeAgentFromTeam(agentId: string, teamId: string) {
     try {
-      const teamMember = await db.agentTeamMember.deleteMany({
+      const teamMember = await prisma.agentTeamMember.deleteMany({
         where: {
           agentId,
           teamId,
@@ -429,7 +429,7 @@ export const AgentService = {
   async deleteTeam(id: string) {
     try {
       // Cascade delete will handle team members
-      const team = await db.agentTeam.delete({
+      const team = await prisma.agentTeam.delete({
         where: { id },
       });
       return team;
@@ -444,7 +444,7 @@ export const AgentService = {
    */
   async addTrainingData(data: AgentTrainingDataInput) {
     try {
-      const trainingData = await db.agentTrainingData.create({
+      const trainingData = await prisma.agentTrainingData.create({
         data: {
           name: data.name,
           description: data.description,
@@ -457,7 +457,7 @@ export const AgentService = {
       });
 
       // Set agent to training status
-      await db.agent.update({
+      await prisma.agent.update({
         where: { id: data.agentId },
         data: { status: AgentStatus.TRAINING },
       });
@@ -477,7 +477,7 @@ export const AgentService = {
    */
   async getTrainingData(agentId: string) {
     try {
-      const trainingData = await db.agentTrainingData.findMany({
+      const trainingData = await prisma.agentTrainingData.findMany({
         where: { agentId },
         orderBy: { createdAt: 'desc' },
       });
@@ -493,7 +493,7 @@ export const AgentService = {
    */
   async createConversation(agentId: string, userId: string, title?: string) {
     try {
-      const conversation = await db.agentConversation.create({
+      const conversation = await prisma.agentConversation.create({
         data: {
           title: title || 'New Conversation',
           messages: [],
@@ -517,7 +517,7 @@ export const AgentService = {
   ) {
     try {
       // Get current messages
-      const conversation = await db.agentConversation.findUnique({
+      const conversation = await prisma.agentConversation.findUnique({
         where: { id: conversationId },
         select: { messages: true },
       });
@@ -530,7 +530,7 @@ export const AgentService = {
       const messages = [...(conversation.messages as any[]), message];
 
       // Update conversation
-      const updatedConversation = await db.agentConversation.update({
+      const updatedConversation = await prisma.agentConversation.update({
         where: { id: conversationId },
         data: {
           messages: messages,
@@ -550,7 +550,7 @@ export const AgentService = {
    */
   async getUserConversations(userId: string, agentId?: string) {
     try {
-      const conversations = await db.agentConversation.findMany({
+      const conversations = await prisma.agentConversation.findMany({
         where: {
           userId,
           ...(agentId ? { agentId } : {}),
@@ -578,7 +578,7 @@ export const AgentService = {
    */
   async getConversation(id: string) {
     try {
-      const conversation = await db.agentConversation.findUnique({
+      const conversation = await prisma.agentConversation.findUnique({
         where: { id },
         include: {
           agent: true,
@@ -604,7 +604,7 @@ export const AgentService = {
    */
   async submitFeedback(agentId: string, userId: string, rating: number, comment?: string) {
     try {
-      const feedback = await db.agentFeedback.create({
+      const feedback = await prisma.agentFeedback.create({
         data: {
           rating,
           comment,
@@ -614,14 +614,14 @@ export const AgentService = {
       });
 
       // Update agent's average rating
-      const feedbacks = await db.agentFeedback.findMany({
+      const feedbacks = await prisma.agentFeedback.findMany({
         where: { agentId },
         select: { rating: true },
       });
 
       const averageRating = feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length;
 
-      await db.agent.update({
+      await prisma.agent.update({
         where: { id: agentId },
         data: { rating: parseFloat(averageRating.toFixed(1)) },
       });

@@ -128,7 +128,7 @@ const mockTopRecipients = [
   { name: 'Lisa Brown', email: 'lisa.b@example.com', opens: 29, clicks: 11, engagementScore: 76 },
 ];
 
-Email Sidebar Items
+// Email Sidebar Items
 const mailboxItems = [
   { name: 'Inbox', icon: Inbox, count: 24, path: '/inbox' },
   { name: 'Starred', icon: Star, count: 7, path: '/starred' },

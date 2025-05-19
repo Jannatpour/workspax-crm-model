@@ -57,7 +57,7 @@ import {
   ChevronDown,
   AlertTriangle,
 } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 
 // Agent edit form schema (same as create form)

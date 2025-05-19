@@ -54,7 +54,15 @@ interface Template {
 
 type OverviewState = 'overview' | 'creating' | 'editing';
 
-export function TemplatesOverview({ isCreating = false }: { isCreating?: boolean }) {
+export function TemplatesOverview({
+  isCreating = false,
+  isFiltered = false,
+  category = '',
+}: {
+  isCreating?: boolean;
+  isFiltered?: boolean;
+  category?: string;
+}) {
   const { changeSection } = useDashboard();
   const { toast } = useToast();
 
@@ -232,13 +240,33 @@ export function TemplatesOverview({ isCreating = false }: { isCreating?: boolean
     );
   }
 
+  // Effect to handle filtered view
+  useEffect(() => {
+    if (isFiltered && category) {
+      // Set active tab based on category
+      setActiveTab('recent');
+
+      // Filter templates based on category
+      // In a real app, this would filter from an API or state
+      console.log(`Filtering templates by category: ${category}`);
+    }
+  }, [isFiltered, category]);
+
   // Main templates overview UI
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Templates</h1>
-          <p className="text-muted-foreground">Create and manage your reusable templates</p>
+          <h1 className="text-3xl font-bold">
+            {isFiltered && category
+              ? `${category.charAt(0).toUpperCase() + category.slice(1)} Templates`
+              : 'Templates'}
+          </h1>
+          <p className="text-muted-foreground">
+            {isFiltered
+              ? `Browse and manage your ${category} templates`
+              : 'Create and manage your reusable templates'}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button
